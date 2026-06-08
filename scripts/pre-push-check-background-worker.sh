@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Pre-push stability gate for background-worker-service (5 steps)
+# Pre-push stability gate for background-worker-service (6 steps)
 
 step() { echo "Step $1: $2…"; }
 fail() { echo "FAILED at step $1: $2" >&2; exit 1; }
@@ -32,19 +32,25 @@ fi
 
 # --- Pipeline ---
 
-step "1/5" "prisma generate"
-npx prisma generate || fail "1/5" "prisma generate failed"
+step "1/6" "npm ci"
+if [[ ! -f package-lock.json ]]; then
+    fail "1/6" "package-lock.json missing — cannot run npm ci"
+fi
+npm ci || fail "1/6" "npm ci failed"
 
-step "2/5" "typecheck"
-npm run typecheck || fail "2/5" "typecheck failed"
+step "2/6" "prisma generate"
+npx prisma generate || fail "2/6" "prisma generate failed"
 
-step "3/5" "lint:check"
-npm run lint:check || fail "3/5" "lint:check failed"
+step "3/6" "typecheck"
+npm run typecheck || fail "3/6" "typecheck failed"
 
-step "4/5" "test:cov"
-npm run test:cov || fail "4/5" "test:cov failed"
+step "4/6" "lint:check"
+npm run lint:check || fail "4/6" "lint:check failed"
 
-step "5/5" "build"
-npm run build || fail "5/5" "build failed"
+step "5/6" "test:cov"
+npm run test:cov || fail "5/6" "test:cov failed"
 
-echo "All 5 checks passed — branch is push-ready."
+step "6/6" "build"
+npm run build || fail "6/6" "build failed"
+
+echo "All 6 checks passed — branch is push-ready."
