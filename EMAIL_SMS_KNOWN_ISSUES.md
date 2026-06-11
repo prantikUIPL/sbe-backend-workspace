@@ -25,7 +25,7 @@
 | 5 | Template Type enum: `Event` vs `System` contradiction | Open — V2 did **not** reconcile; we use `System` | BA / Documentation | None |
 | 6 | `Both` channel in predefined Listing / Detail | Open — unsupported by single-channel model | BA / Documentation | None |
 | 7 | From-Email domain text replaced by brand titles (auto-link/crawler artifact) | Open — BA to restore the two domain strings in the stories | BA / Documentation | None |
-| 8 | Audit "last modified by" wording — stored on record vs derived | Resolved (ours) — derived from `admin_audit_logs`; functionally equivalent | Us (noted for BA) | None |
+| 8 | Audit "last modified by" wording — stored on record vs derived | Resolved (ours) — derived from `admin_audit_logs`; functionally equivalent. **Amended 2026-06-11:** the listing response does **not** include last-modified info at all — it is served by the **separate audit-logs endpoint** (`GET /:id/audit-logs` over the separate `admin_audit_logs` table). **BA to update story 76.1** (remove "last modified by/date" from the listing columns or re-point it to the audit endpoint) | Us → BA to update 76.1 | None |
 | 9 | WYSIWYG "images" vs separate image-upload module | Open — confirm URL-reference only this sprint | BA / Documentation | None |
 | 10 | Custom listing "event selector" ambiguity | Open — clarify intent | BA / Documentation | None |
 | 11 | Column rename `type` → `tag` (TL design review, 2026-06-10) | Resolved — applied to design docs; column is `tag`, enum name `NotificationTemplateType` unchanged. Carry into `schema.prisma`/DTO/query param (`?tag=`)/seeder when code is implemented | Us | None (rename only) |
@@ -130,6 +130,8 @@ V2 Audit Log stories (file rows 11, 22) say the system "shall **persist** the la
 
 - **What we are doing:** "last modified by / at" is **derived from the existing `admin_audit_logs`** (the design drops a dedicated `updated_by` column on the template; `updated_at` covers the timestamp). The admin sees the same information (who / when / field-level before-after).
 - **Status:** functionally equivalent — **no change required**; recorded so the wording difference is not mistaken for a gap. Noted for BA.
+- **Amended 2026-06-11 (listing implementation decision):** the listing endpoint (`GET /notification-templates`) does **not** return any last-modified-by information. Audit data lives in the **separate `admin_audit_logs` table** and will be exposed through the **separate audit-logs endpoint** (`GET /notification-templates/:id/audit-logs`, later phase). The list row carries only the record's own `updated_at`.
+- **Action:** **BA to update story 76.1** — it currently lists "last modified by/date" among the listing columns; either remove it from the listing or re-point it to the audit-log endpoint/screen. (Endpoint change itself is documented in `EMAIL_SMS_API_CHANGELOG.md`.)
 
 ## 9. WYSIWYG "images" vs separate image-upload module
 

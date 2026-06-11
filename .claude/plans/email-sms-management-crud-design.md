@@ -323,7 +323,7 @@ The current backlog (supersedes the V1 6-story spec in Source 1). Per-story verd
 
 | Story | In scope | Schema / API element |
 |---|---|---|
-| 76.1 Listing | Yes | `GET /notification-templates`; list cols `template_name`, `notification_type`, `tag`, `channel`, `is_active`, `updated_at`; "last modified by/date" **derived from `admin_audit_logs`** (no `updated_by` column) — never-edited rows show *System / Seed* or blank |
+| 76.1 Listing | Yes | `GET /notification-templates`; list cols `template_name`, `notification_type`, `tag`, `channel`, `is_active`, `updated_at`; "last modified by/date" is **not in the listing response** (decision 2026-06-11) — served by the separate audit-logs endpoint (`GET /:id/audit-logs` over `admin_audit_logs`); BA to update 76.1 (known-issues #8) |
 | 76.2 Search | Yes | `?search=` over `template_name` + `notification_type` (optionally `subject`) |
 | 76.3 Filter | Yes | `?tag=` (uses `System`, **not `Event`** — known-issues #5), `?channel=` (`EMAIL\|SMS`, **`Both` dropped**), `?is_active=` |
 | 76.4 Detail View | Yes | `GET /:id`; predefined `FROM`/`TO`/`sender_id` shown **read-only (system-managed)**; scheduling section labelled later-phase |
