@@ -164,3 +164,45 @@ New **required** nested object (the FK `notification_type` → `trigger_events.s
 `id` is a positive INT4 autoincrement primary key; the stock `ParseIntPipe` has no range check, so over-range values passed validation and blew up at the database layer, while zero/negative values burned a DB round-trip to 404. Replaced with a shared `ParseIntIdPipe` (`src/common/pipes/parse-int-id.pipe.ts`) that rejects ids outside `[1, 2147483647]` at the request boundary. The endpoint's error contract is now fully 400/404 as documented.
 
 Note: the same pipe was applied to the booth-agreements `:id` routes (GET/PATCH/DELETE), which had the identical hole — recorded here for traceability only; that module is outside the Email & SMS scope.
+
+---
+
+## 2026-06-11 — `GET /admin/trigger-events` + `GET /admin/allowed-from-domains` (new supporting endpoints)
+
+**Repo:** `admin-backend-api`, branch `feature/SBE-671`
+**Purpose:** reference dropdowns for the custom-template create/edit UI (77.x) — trigger picker / placeholder picker, and the fixed-domain dropdown of the FROM address.
+
+**ADDITIVE — no existing endpoint changed.** Recorded because the paths deviate from the design doc, which originally nested them under `/notification-templates/...`. Decision: separate controllers/modules with standalone paths (avoids the `/notification-templates/:id` route-shadowing coupling). The design doc's "Supporting endpoints" table has been updated to match.
+
+### `GET /admin/trigger-events`
+
+Unpaginated array of the full trigger-event catalog (code-controlled, seeded — no admin CRUD), ordered by `label` asc:
+
+```json
+[
+  {
+    "id": 7,
+    "slug": "welcome_email",
+    "label": "Admin User Created",
+    "available_placeholders": ["name", "siteName", "loginUrl", "tempPassword", "supportEmail"],
+    "is_custom": false
+  }
+]
+```
+
+`available_placeholders` is the placeholder-picker source for the selected trigger (`null` possible — column is nullable). `is_custom` is included ahead of the 77.x edit rules.
+
+### `GET /admin/allowed-from-domains`
+
+Unpaginated array of **active** (`is_active = true`) whitelist domains a custom EMAIL template may send FROM, ordered by `domain` asc. Inactive domains are excluded — they must not be offered in the dropdown. `is_active` is omitted from the payload (always true by construction):
+
+```json
+[
+  { "id": 1, "domain": "theshowproducers.com" },
+  { "id": 2, "domain": "thesmallbusinessexpo.com" }
+]
+```
+
+### Permissions (action required)
+
+Two new permission keys: `trigger-events.list` and `allowed-from-domains.list`. Seeded by `permission.seeder.ts`, granted to **Admin/Super Administrator only** by `role.seeder.ts`, and mapped to permission groups (`View Trigger Events` / `View Allowed FROM Domains`) by `permission-group.seeder.ts`. **Environments must re-run the seeders** — until then even Admin gets `403` on both endpoints. The re-run fixes Admin/Super Administrator only; **every other role** (the other seeded roles, e.g. the SBE team roles, and all custom roles) additionally needs the two new groups enabled per role via the role-permissions UI (or the raw `POST /roles/:id/permissions`) before its users can load the dropdowns. (The seed re-run is safe for manually deactivated FROM domains: the domain seeder no longer touches existing rows on re-run.) Other errors follow the standard auth contract (401/403/500); no request parameters, so no 400s.

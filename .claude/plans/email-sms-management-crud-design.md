@@ -368,8 +368,8 @@ All under `/admin/notification-templates`. Granular permissions reuse the existi
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/notification-templates/trigger-events` | List trigger events for dropdown |
-| GET | `/notification-templates/allowed-from-domains` | List allowed FROM domains (for client-side validation hint) |
+| GET | `/trigger-events` | List trigger events for dropdown (standalone module — built 2026-06-11) |
+| GET | `/allowed-from-domains` | List allowed FROM domains (for client-side validation hint) (standalone module — built 2026-06-11) |
 | GET | `/notification-templates/:id/audit-logs` | Edit history (queries `admin_audit_logs` where `entity_type = 'notification_template'` and `entity_id = :id`) |
 
 ### Service-layer enforcement
