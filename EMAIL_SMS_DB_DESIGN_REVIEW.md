@@ -19,7 +19,7 @@
 │  is_active, created_at, updated_at                       │
 │  ─── NEW COLUMNS (6) ────────────────────────────────────│
 │  template_name                                           │
-│  type                ◄── enum NotificationTemplateType   │ // change column name to Tag
+│  tag                 ◄── enum NotificationTemplateType   │
 │  channel_config (JSONB)  ← shape varies by channel       │
 │  is_predefined (boolean)                                 │
 │  schedule_config (JSONB)   ← array, channel-agnostic     │
@@ -29,24 +29,20 @@
                    ▼
         ┌──────────────────┐         ┌───────────────────┐
         │  trigger_events  │         │ admin_audit_logs  │
-        │  (NEW, 18 rows)  │         │  (existing, +1    │
+        │  (NEW, 20 rows)  │         │  (existing, +1    │
         ├──────────────────┤         │   entity_type)    │
         │  id (PK)         │         ├───────────────────┤
-        │  slug            │         │  entity_type =    │
-        │  label           │         │   'notification_  │
-        │  available_      │         │    template'      │
-        │   placeholders   │         │  entity_id ──────►│ notification_
-        │   (JSONB)        │         │  previous_value   │ templates.id
-        │  is_custom       │         │  new_value        │ (logical, no FK)
-        │   (boolean,      │         │  performed_by ───►│ users.id
-        │   default false) │         │  note, created_at │
-        │                  │         └───────────────────┘
-        │  UNIQUE          │
-        │  (slug,is_custom)│
-        │  + partial UQ on │
-        │  slug WHERE      │
-        │  is_custom=false │
-        │  (FK target)     │
+        │  slug (UNIQUE)   │         │  entity_type =    │
+        │   ◄── FK target  │         │   'notification_  │
+        │  label           │         │    template'      │
+        │  available_      │         │  entity_id ──────►│ notification_
+        │   placeholders   │         │  previous_value   │ templates.id
+        │   (JSONB)        │         │  new_value        │ (logical, no FK)
+        │  is_custom       │         │  performed_by ───►│ users.id
+        │   (boolean flag, │         │  note, created_at │
+        │   default false, │         └───────────────────┘
+        │   all seeded     │
+        │   rows = false)  │
         └──────────────────┘
 
 ┌────────────────────────────┐
@@ -65,7 +61,7 @@
 
 | Column | New / Existing | Requirement it serves | How it's used |
 |---|---|---|---|
-| `id` | existing | — | PK; entity ref in audit logs |
+| `id` | existing (typed change) | — | PK; entity ref in audit logs. Converted **BigInt → Int** at implementation (2026-06-11); `notification_logs.notification_template_id` follows. New tables (`trigger_events`, `allowed_from_domains`) also use Int PKs. |
 | `notification_type` | existing (typed change) | Custom templates pick a trigger; predefined are pinned to one. Cross-service mailer lookup. | Lookup key in `sendFromTemplate(notification_type)`. Promoted to FK → `trigger_events.slug`. |
 | `channel` | existing (type promoted) | UI "Format" filter; SMS support | `VarChar(50)` → enum `NotificationChannel { EMAIL, SMS }`. Drives `channel_config` shape selection. |
 | `subject` | existing | EMAIL templates only | Nullable; required for EMAIL, must be NULL for SMS. UI hides field for SMS. |
@@ -74,7 +70,7 @@
 | `is_active` | existing | Enable/disable toggle | Filter param `?is_active=`; predefined edit allowed. |
 | `created_at`, `updated_at` | existing | Audit / list sort | `updated_at` shown in list view. |
 | `template_name` | **NEW** | Listing display column (user story #1) | Human-readable name shown in admin grid; searchable. |
-| `type` | **NEW** | Type filter (user story #3); Excel taxonomy (Store/Internal/Vendor/Product/PPL) | Enum `NotificationTemplateType`. Decoupled from trigger so admin can categorize independently. |
+| `tag` | **NEW** | Type/tag filter (user story #3); Excel taxonomy (Store/Internal/Vendor/Product/PPL) | Enum `NotificationTemplateType` (column named `tag`; enum name unchanged). Decoupled from trigger so admin can categorize independently. |
 | `channel_config` | **NEW** | Recipient config (user story #6); FROM/CC/BCC; SMS sender + recipients | Single JSONB column; shape varies by `channel`. Replaces 6 email-shaped columns so SMS rows don't carry NULL email columns. |
 | `is_predefined` | **NEW** | Two-tier system (predefined vs custom) per client feedback | Boolean flag. Drives service-layer edit rules. `true` for the 18 seeded rows; `false` for admin-created. |
 | `schedule_config` | **NEW** | Time-delay scheduling (client: essential; deferred consumption) | JSONB **array** of `{ delay_value, delay_unit, timezone }`. Stored now, consumed by future scheduler worker. |
@@ -93,7 +89,7 @@
 
 | Table | Purpose | Why a table (not enum/code constant) |
 |---|---|---|
-| `trigger_events` | Catalog of valid trigger event slugs + their available placeholders (JSONB). 18 rows seeded, all `is_custom = false`. **Strictly code-controlled** — no admin CRUD endpoints. | Admin UI needs `GET /trigger-events` for the dropdown; `available_placeholders` is data, not code. FK from `notification_templates.notification_type`. The `is_custom` column + composite unique `(slug, is_custom)` are a structural guard ensuring 1:1 mapping: querying by `notification_type` with `is_custom = false` always returns exactly one row. A partial unique index on `slug WHERE is_custom = false` makes `slug` a valid FK target for the predefined set. |
+| `trigger_events` | Catalog of valid trigger event slugs + their available placeholders (JSONB). **20 rows seeded** (18 in-scope for the module + `ppl_subscription_canceled` / `ppl_product_order_payment`, which the FK requires), all `is_custom = false`. **Strictly code-controlled** — no admin CRUD endpoints. | Admin UI needs `GET /trigger-events` for the dropdown; `available_placeholders` is data, not code. FK from `notification_templates.notification_type` → `trigger_events.slug`, with `slug` **globally unique**. *(Implementation amendment 2026-06-11: the reviewed composite-unique `(slug, is_custom)` + partial-index FK was not implementable — **Postgres FKs cannot reference partial unique indexes**. Global unique `slug` preserves the 1:1 mapping and keeps the FK Prisma-native in all 5 schemas; trade-off: a future custom trigger cannot reuse a predefined slug. See `EMAIL_SMS_KNOWN_ISSUES.md` #13.)* |
 | `allowed_from_domains` | Whitelist of domains a custom EMAIL template can send FROM. 2 rows seeded (`theshowproducers.com`, `thesmallbusinessexpo.com`). | Client wants admins to vary the local part (`anything@allowed-domain`) but not the domain. Lookup avoids code redeploy to change the list. |
 
 ### Audit logging — reuse, don't add
@@ -124,7 +120,7 @@
   "from_address": "events@thesmallbusinessexpo.com",
   "from_name": "SBE Events Team",
   "reply_to": "events@thesmallbusinessexpo.com",
-  "to_recipients": ["lead-list@thesmallbusinessexpo.com"], // Resolution Engine is required @amrin
+  "to_recipients": ["lead-list@thesmallbusinessexpo.com"],
   "cc_recipients": [],
   "bcc_recipients": ["analytics@theshowproducers.com"]
 }
@@ -174,7 +170,7 @@
 | Enum | Status | Values | Used by |
 |---|---|---|---|
 | `NotificationChannel` | **NEW** | `EMAIL`, `SMS` | `notification_templates.channel`. Promoted from `VarChar(50)`. PUSH dropped from existing DTO whitelist (no concrete requirement). |
-| `NotificationTemplateType` | **NEW** | `Store`, `Internal`, `Vendor`, `Product`, `PPL`, `System` | `notification_templates.type`. Matches Excel taxonomy + adds `System` for non-Excel templates (e.g., `contact_us_acknowledgment`). |
+| `NotificationTemplateType` | **NEW** | `Store`, `Internal`, `Vendor`, `Product`, `PPL`, `System` | `notification_templates.tag` (column renamed from `type`; enum name unchanged). Matches Excel taxonomy + adds `System` for non-Excel templates (e.g., `contact_us_acknowledgment`). |
 | `AdminAuditEntityType` | existing, +1 | `... + notification_template` | `admin_audit_logs.entity_type` for template edit history. |
 
 ## 5. What's explicitly NOT in this plan
@@ -185,5 +181,5 @@
 - SMS provider integration (Twilio etc.)
 - Stop conditions on follow-ups, inter-template follow-up references
 - The 26 client-Excel templates whose trigger modules (Contracts, Cart, Orders, Booth) don't exist yet
-- Dynamic recipient resolution at send time (`{salesperson_email_address}` etc.) // need to implement 
+- Dynamic recipient resolution at send time (`{salesperson_email_address}` etc.) — deferred to the follow-on mailer plan; reviewer reopened this (see `EMAIL_SMS_KNOWN_ISSUES.md`), pending explicit BA/TL approval to pull forward 
 - PUSH channel

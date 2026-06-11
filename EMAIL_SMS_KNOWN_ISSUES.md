@@ -10,7 +10,7 @@
 >
 > **Updated user stories:** `Email & SMS Management V2.xlsx` (full-text stories, 21 rows across the two epics). This register was reconciled against V2 on the date below. The V2 stories **fully specify** Scheduling, SMS provider, and (custom) Dynamic Recipient Resolution; those remain **out of current-sprint scope per a verbal agreement with the BA team (2026-06-03)** — documented here, not built this sprint. **Exception:** the Dynamic Recipient Resolution story V2 added to the *predefined* epic is **not a deferral** — it does not apply and must be removed (see issue #3).
 >
-> **Last updated:** 2026-06-03 (reconciled against `Email & SMS Management V2.xlsx`)
+> **Last updated:** 2026-06-11 (schema foundation **implemented** across all 5 repos — migration `20260611120000_sbe671_email_sms_management`, seeders, mirrored schemas. Implementation amendments: FK via globally-unique `trigger_events.slug` — see issue #13; `notification_templates.id` converted BigInt→Int; 20 trigger rows seeded, not 18 — the 2 extra pre-existing slugs are FK-required. Prior 2026-06-10 reconciliations: `type`→`tag` rename — #11; custom-DRR reopened-but-still-deferred — #3; custom-SMS scoped out — #12)
 
 ---
 
@@ -28,6 +28,9 @@
 | 8 | Audit "last modified by" wording — stored on record vs derived | Resolved (ours) — derived from `admin_audit_logs`; functionally equivalent | Us (noted for BA) | None |
 | 9 | WYSIWYG "images" vs separate image-upload module | Open — confirm URL-reference only this sprint | BA / Documentation | None |
 | 10 | Custom listing "event selector" ambiguity | Open — clarify intent | BA / Documentation | None |
+| 11 | Column rename `type` → `tag` (TL design review, 2026-06-10) | Resolved — applied to design docs; column is `tag`, enum name `NotificationTemplateType` unchanged. Carry into `schema.prisma`/DTO/query param (`?tag=`)/seeder when code is implemented | Us | None (rename only) |
+| 12 | Custom SMS templates — schema-supported but **out of current scope** | Resolved (scope) — V2 `77.x` Custom epic is **Email only** (Change Log #2); custom create rejects `channel = SMS`. Predefined SMS (`76.x`) stays in scope, edit-only. `NotificationChannel.SMS` + the SMS `channel_config` variant remain, so re-introducing custom SMS later needs **zero schema change** | BA (if custom SMS wanted later) | None |
+| 13 | `trigger_events` FK design amended at implementation (2026-06-11): composite unique `(slug, is_custom)` + partial-index FK → **globally unique `slug`** | Resolved (ours) — **Postgres FKs cannot reference partial unique indexes**, so the reviewed design was not implementable. Global unique `slug` preserves the 1:1 predefined-trigger ↔ slug mapping and keeps the FK Prisma-native in all 5 schemas. Consequence: a future *custom* trigger cannot reuse a predefined slug (distinct slugs required). Routed to TL for sign-off | Us → TL sign-off | Implemented — `slug` UNIQUE; `is_custom` retained as a flag column |
 
 ---
 
@@ -50,6 +53,7 @@ V2 introduces **two** Dynamic Recipient Resolution Engine stories — one in the
 **Custom (`77.9`) — Deferred (out of current sprint).**
 - Send-time resolution of `{salesperson}`, `{main customer contact}`, `{all customer contacts}`, internal Gmail groups, etc. is **out of scope this sprint** (verbal BA agreement 2026-06-03). A valid later-phase story.
 - **Schema impact: none.** `to_recipients` stores literal address strings / placeholder tokens today; send-time resolution is deferred to the mailer plan.
+- **TL design review reopened this (2026-06-10).** Inline annotations on `EMAIL_SMS_DB_DESIGN_REVIEW.md` ("Resolution Engine is required @amrin" on the custom EMAIL `to_recipients` example; "need to implement" on the §5 out-of-scope DRR line) flagged that a resolution engine is wanted for custom. **Standing decision is unchanged: custom DRR remains deferred to the follow-on mailer plan** — the annotations are reviewer questions, not approved scope. The inline notes have been resolved into a pointer to this entry; BA/TL to confirm whether to pull custom DRR forward into its own story ahead of the mailer plan.
 
 **Predefined (V2 row 10) — Does NOT apply; remove from the predefined epic.**
 - **Predefined templates are system emails / SMS** with **system-defined recipients**. The TO / FROM (and `sender_id`) are **system-controlled and read-only** — an admin cannot change who a predefined template is sent to, because doing so would **disrupt the system-defined send flows** that fire these templates.

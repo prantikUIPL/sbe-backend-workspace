@@ -1,17 +1,23 @@
 # Email & SMS Management — CRUD Design Document
 
-> **Status**: Design under review. CRUD-only scope. Mailer/scheduler/SMS-provider work is deferred to follow-on plans.
+> **Status**: Design under review. CRUD-only scope. Basis is the **V2 two-epic backlog** (`76.x Predefined` — edit-only, Email + SMS; `77.x Custom` — full CRUD, **Email only**). Mailer/scheduler/SMS-provider work is deferred to follow-on plans.
 
 ## Context
 
-Three sources of truth analyzed:
-- **"Email & SMS Management.xlsx"** — 6 user stories (listing, search, filter, detail view, edit, recipient config)
+Sources of truth analyzed:
+- **"Email & SMS Management.xlsx"** — original 6 user stories (V1: listing, search, filter, detail view, edit, recipient config). Retained as historical baseline; **superseded by V2 below.**
 - **"ONLY_Auto_Email_Notification_Triggers.xlsx"** — 40 template records (36 Email + 4 SMS) across Store/Internal/Vendor/PPL/Product types
 - **"SBE_client_feedback_email_sms.pdf"** — May 14–20 email thread between UIPL (Amrin) and client (Theo/Zach)
+- **"Email & SMS Management V2.xlsx" / "Email & SMS Management Upadated Epic.xlsx"** — the **current backlog**, restructured into **two epics**: `76.x Predefined Email & SMS Management` (edit-only; Email + SMS) and `77.x Custom Email Management` (full CRUD; **Email only**), ~19 full-text stories. Separate UIs / separate CRUD screens but the **same API endpoints** (service branches on `is_predefined`). The two-tier design here is reused as-is. Story-by-story verdicts and the V1→V2 change log live in `EMAIL_SMS_STORY_REVISIONS_V2.md`.
 
 ## Scope: CRUD Only
 
 This plan covers **only the admin-panel CRUD** for notification templates. It is the minimum that gives admins the listing, search, filter, detail view, and edit experience described in the user stories.
+
+**Two epics (V2 backlog):**
+- **`76.x` Predefined Email & SMS Management** — system-seeded templates; **edit-only** (no create/delete via API); covers **both Email and SMS**. `trigger_event` / `channel` / `FROM` / `sender_id` / `TO` are read-only; `subject`/`body`/`is_active`/`tag` + EMAIL `channel_config` niceties are editable.
+- **`77.x` Custom Email Management** — admin-created templates; **full CRUD**; **Email only** (no custom SMS this sprint — see §Scope note below).
+- Predefined and custom are shown as **separate UIs / CRUD screens** but use the **same API endpoints**; the service branches on the `is_predefined` flag. The two-tier rules are enforced in the service layer.
 
 **What's included:**
 - Schema evolution: add columns + 2 new supporting tables (reuse existing `AdminAuditLog` for audit)
@@ -26,6 +32,7 @@ This plan covers **only the admin-panel CRUD** for notification templates. It is
 - ❌ Dynamic recipient resolution (`{salesperson_email_address}` etc. at send time)
 - ❌ Module-specific triggers (Contracts, Cart, Orders, Booth, etc.)
 - ❌ Seeding the 26 templates from the Excel that depend on unbuilt modules
+- ❌ **Custom SMS templates** — V2's `77.x` Custom epic is **Email only**. The schema (`NotificationChannel.SMS` + the SMS `channel_config` variant) still supports SMS for **predefined** rows (`76.x`) and keeps custom SMS a zero-migration add later, but custom create/edit is Email-only this sprint (see `EMAIL_SMS_KNOWN_ISSUES.md`)
 
 The admin panel becomes a **configuration store** — admins can edit everything the client requested, and the configuration sits in the database ready for the mailer/scheduler/SMS work to consume it in subsequent plans.
 
@@ -60,7 +67,7 @@ All 18 slugs already exist in `notification-template.seeder.ts` today. 14 have a
 - **Channel**: column is promoted from free-form `VarChar(50)` to Prisma enum `NotificationChannel { EMAIL, SMS }`. The codebase already soft-validates this whitelist at the DTO layer (`NOTIFICATION_CHANNELS = ['EMAIL', 'SMS', 'PUSH']` in `notification-template.dto.ts`); we're moving the constraint into the database and dropping `PUSH` since it has no concrete requirement yet. PUSH can be added to the enum later when scoped.
 - **Channel-specific config**: a single `channel_config` JSONB column replaces the six email-shaped columns (`from_address`, `from_name`, `reply_to`, `to_recipients`, `cc_recipients`, `bcc_recipients`). Shape varies by `channel` — see "JSONB shapes" section below. SMS rows don't carry NULL email columns; future channels (PUSH, WhatsApp) add new shape variants without schema migrations.
 - **Predefined templates** (the 18 above):
-  - Editable across both channels: `subject` (EMAIL only — already nullable for SMS), `body`, `is_active`, `type`
+  - Editable across both channels: `subject` (EMAIL only — already nullable for SMS), `body`, `is_active`, `tag`
   - Editable inside `channel_config`:
     - EMAIL: `from_name`, `reply_to`, `cc_recipients`, `bcc_recipients`
     - SMS: (none — predefined SMS has no admin-editable channel config; `body` is the only thing to edit)
@@ -74,7 +81,7 @@ All 18 slugs already exist in `notification-template.seeder.ts` today. 14 have a
   - SMS: `sender_id` is alphanumeric (≤ 11 chars) **or** E.164 phone (`+1...`); `to_recipients` are E.164 phone strings
   - Admin picks the trigger from the `trigger_events` dropdown → sets `notification_type` to the trigger's slug
   - Multiple templates (predefined + custom) can share the same `notification_type` / trigger; channel is independent of trigger (the same trigger can fire both EMAIL and SMS templates if both exist)
-- **Trigger events**: stored in `trigger_events` table; **strictly code-controlled** — admins cannot create, edit, or delete triggers via the admin panel. All 18 seeded rows have `is_custom = false`. The `is_custom` column + composite unique constraint `(slug, is_custom)` exist as a structural guard so that querying by `notification_type` with `is_custom = false` always returns exactly one row, preserving the 1:1 mapping between predefined triggers and their templates.
+- **Trigger events**: stored in `trigger_events` table; **strictly code-controlled** — admins cannot create, edit, or delete triggers via the admin panel. All seeded rows (20 — see seed count note under "New tables") have `is_custom = false`. `slug` is **globally unique** and is the FK target for `notification_templates.notification_type`; the `is_custom` flag marks the predefined set explicitly. *(Amended 2026-06-11: the earlier composite-unique `(slug, is_custom)` + partial-index FK design was not implementable — Postgres FKs cannot reference partial unique indexes.)*
 - **Placeholders**: per-trigger picker, code-maintained (not admin-editable); same placeholder set works across EMAIL and SMS for the same trigger
 - **Scheduling**: `schedule_config` and `follow_up_config` are **channel-agnostic** — same JSONB shapes apply whether the row's channel is EMAIL or SMS
 
@@ -94,7 +101,7 @@ All 18 slugs already exist in `notification-template.seeder.ts` today. 14 have a
 │  is_active, created_at, updated_at                       │
 │  ─── NEW COLUMNS (6) ───────────────────────────────────│
 │  template_name                                           │
-│  type                ◄── enum NotificationTemplateType   │
+│  tag                 ◄── enum NotificationTemplateType   │
 │  channel_config (JSONB) ◄── shape varies by channel      │
 │                             (see EMAIL/SMS examples)     │
 │  is_predefined       (boolean)                           │
@@ -108,23 +115,20 @@ All 18 slugs already exist in `notification-template.seeder.ts` today. 14 have a
                        ▼
             ┌──────────────────┐         ┌───────────────────┐
             │  trigger_events  │         │ admin_audit_logs  │
-            │  (NEW, 18 rows)  │         │  (existing)       │
+            │  (NEW, 20 rows)  │         │  (existing)       │
             ├──────────────────┤         ├───────────────────┤
             │  id (PK)         │         │  id (PK)          │
-            │  slug            │         │  entity_type      │
-            │  label           │         │   = 'notification_│
-            │  available_      │         │     template'     │
-            │   placeholders   │         │  entity_id ──────►│ notification
-            │   (JSONB)        │         │                   │ _templates.id
-            │  is_custom       │         │  previous_value   │ (logical, no FK)
-            │   (boolean)      │         │  new_value        │
-            │  UNIQUE          │         │  performed_by ───►│ users.id
-            │  (slug,is_custom)│         │  note             │
-            │  + partial UQ on │         │  created_at       │
-            │  slug WHERE      │         └───────────────────┘
-            │  is_custom=false │
-            │  (FK target)     │
-            └──────────────────┘
+            │  slug (UNIQUE)   │         │  entity_type      │
+            │   ◄── FK target  │         │   = 'notification_│
+            │  label           │         │     template'     │
+            │  available_      │         │  entity_id ──────►│ notification
+            │   placeholders   │         │                   │ _templates.id
+            │   (JSONB)        │         │  previous_value   │ (logical, no FK)
+            │  is_custom       │         │  new_value        │
+            │   (boolean flag, │         │  performed_by ───►│ users.id
+            │   all seeded     │         │  note             │
+            │   rows = false)  │         │  created_at       │
+            └──────────────────┘         └───────────────────┘
 
 ┌────────────────────────────┐
 │ allowed_from_domains       │  ← Service-layer lookup only;
@@ -153,7 +157,7 @@ All 18 slugs already exist in `notification-template.seeder.ts` today. 14 have a
 | Column | Type | Notes |
 |---|---|---|
 | `template_name` | varchar | Human-readable display name |
-| `type` | enum `NotificationTemplateType` | Store/Internal/Vendor/Product/PPL/System (filterable) |
+| `tag` | enum `NotificationTemplateType` | Store/Internal/Vendor/Product/PPL/System (filterable); column renamed from `type`, enum name unchanged |
 | `channel` | enum `NotificationChannel` | CHANGED — column type promoted from `VarChar(50)` to enum `{ EMAIL, SMS }`; UI labels this "Format" |
 | `channel_config` | JSONB | nullable; **shape varies by `channel`** (see below); replaces 6 email-only columns (`from_address`, `from_name`, `reply_to`, `to_recipients`, `cc_recipients`, `bcc_recipients`) |
 | `is_predefined` | boolean | default false; the 18 seeded rows are true |
@@ -171,16 +175,15 @@ All 18 slugs already exist in `notification-template.seeder.ts` today. 14 have a
 - `slug` — matches `notification_type` for predefined templates
 - `label`
 - `available_placeholders` (JSONB) — list of placeholder slugs valid for this trigger
-- `is_custom` (boolean, default `false`) — guard column. All 18 seeded rows have `is_custom = false`. Admins **cannot** create custom triggers via the admin panel in this plan; the column exists to make the "predefined" set explicit at query time and to enforce 1:1 lookups via the composite unique below.
-- **Unique constraints**:
-  - Composite unique on `(slug, is_custom)` — guarantees that for any `notification_type`, querying with `is_custom = false` returns **exactly one row**, preserving the 1:1 mapping between predefined triggers and templates.
-  - The composite acts as the FK target for `notification_templates.notification_type` (FK references `trigger_events.slug` with the implicit `is_custom = false` filter — see FK note below).
-- **FK note**: `notification_templates.notification_type` is a foreign key to `trigger_events.slug`. Because `(slug, is_custom)` is the unique key (not `slug` alone), the FK is implemented as a Postgres-level FK against `slug` plus a **partial unique index** `CREATE UNIQUE INDEX trigger_events_slug_predefined_uq ON trigger_events (slug) WHERE is_custom = false;`. This guarantees FK target uniqueness for the predefined set while keeping the composite constraint as the user-visible declaration.
-- Note: `type` is intentionally **not** stored here. Trigger and type are decoupled — admin picks them independently when creating a custom template.
+- `is_custom` (boolean, default `false`) — flag column. All seeded rows have `is_custom = false`. Admins **cannot** create custom triggers via the admin panel in this plan; the column exists to make the "predefined" set explicit at query time.
+- **Unique constraint** *(amended at implementation, 2026-06-11)*: `slug` is **globally unique** (`@unique`). The earlier composite-unique `(slug, is_custom)` + partial-index design was dropped — **Postgres foreign keys cannot reference a partial unique index**, so it was not implementable as specified. Global uniqueness preserves the 1:1 predefined-trigger ↔ slug mapping and lets the FK + relation be declared natively in Prisma across all 5 service schemas (safe under `db push`, zero raw-SQL-only objects). Trade-off: a future *custom* trigger cannot reuse a predefined slug — custom triggers must use distinct slugs. See `EMAIL_SMS_KNOWN_ISSUES.md` #13.
+- **FK note**: `notification_templates.notification_type` is a plain foreign key to `trigger_events.slug` (`ON DELETE RESTRICT ON UPDATE CASCADE`), declared as a Prisma relation.
+- **Seed count note**: the seeder ships **20** trigger rows, not 18 — the existing template seeder also contains `ppl_subscription_canceled` and `ppl_product_order_payment`, and the FK requires a trigger row for **every** existing `notification_type`. The Email & SMS Management admin UI scope remains the 18 in-scope templates.
+- Note: `tag` is intentionally **not** stored here. Trigger and tag are decoupled — admin picks them independently when creating a custom template.
 
 **`NotificationTemplateType` enum** (Prisma enum, follows existing `AdminAuditEntityType` pattern)
 - Values: `Store`, `Internal`, `Vendor`, `Product`, `PPL`, `System`
-- Used by `notification_templates.type` column for strict typing
+- Used by `notification_templates.tag` column for strict typing
 
 **`NotificationChannel` enum** (Prisma enum)
 - Values: `EMAIL`, `SMS`
@@ -275,9 +278,9 @@ UI per entry: number input + unit dropdown (2 fields). Form supports "Add anothe
 
 | # | User story | Schema / API element |
 |---|---|---|
-| 1 | Listing | `GET /notification-templates` (paginated); list columns sourced from `template_name`, `notification_type`, `type`, `channel`, `is_active`, `is_predefined`, `updated_at` |
+| 1 | Listing | `GET /notification-templates` (paginated); list columns sourced from `template_name`, `notification_type`, `tag`, `channel`, `is_active`, `is_predefined`, `updated_at` |
 | 2 | Search | `GET /notification-templates?search=...` — searches `template_name`, `subject`, `notification_type` (case-insensitive substring) |
-| 3 | Filter | Query params: `?type=`, `?channel=`, `?is_active=`, `?is_predefined=`, `?notification_type=` |
+| 3 | Filter | Query params: `?tag=`, `?channel=`, `?is_active=`, `?is_predefined=`, `?notification_type=` |
 | 4 | Detail view | `GET /notification-templates/:id` — returns full row + `available_placeholders` joined from `trigger_events` |
 | 5 | Edit (WYSIWYG) | `PUT /notification-templates/:id` → `body` column (HTML for EMAIL, plain for SMS) + placeholder picker driven by `trigger_events.available_placeholders` |
 | 6 | Recipient config | `channel_config` JSONB — keys `from_address`/`to_recipients`/`cc_recipients`/`bcc_recipients` (EMAIL) or `sender_id`/`to_recipients` (SMS); `allowed_from_domains` lookup for FROM validation |
@@ -305,12 +308,47 @@ UI per entry: number input + unit dropdown (2 fields). Form supports "Add anothe
 |---|---|---|
 | 1 | Single table for predefined + custom | `notification_templates` + `is_predefined` boolean |
 | 2 | Predefined: trigger / from / to are read-only | Service-layer reject on `notification_type`, `channel`, `channel_config.from_address`, `channel_config.to_recipients`, `channel_config.sender_id` |
-| 3 | Predefined: subject / body / status / cc / bcc editable | Service-layer allow list on `subject`, `body`, `is_active`, `type`, `channel_config.from_name`, `reply_to`, `cc_recipients`, `bcc_recipients` |
+| 3 | Predefined: subject / body / status / cc / bcc editable | Service-layer allow list on `subject`, `body`, `is_active`, `tag`, `channel_config.from_name`, `reply_to`, `cc_recipients`, `bcc_recipients` |
 | 4 | Custom: full CRUD, FROM domain-restricted to TheShowProducers.com / TheSmallBusinessExpo.com | `allowed_from_domains` table seeded with the two domains; service-layer domain extraction + validation |
 | 5 | Trigger events read-only; new types cannot be created via admin | `trigger_events` table; no POST endpoint for triggers; `notification_type` is a FK to `trigger_events.slug` |
 | 6 | Placeholders controlled by code, not editable | `trigger_events.available_placeholders` JSONB (seeded from code, not exposed via admin write APIs) |
 | 7 | Time delays (client: essential / UIPL: deferred) | `schedule_config` (array) + `follow_up_config` (array) stored on the row but not consumed by any worker in this plan — shape is admin-fillable, the scheduler plan picks it up later |
 | 8 | SMS (4 templates) but no SMS provider yet | `NotificationChannel.SMS` enum value + `channel_config` SMS variant; admin can manage SMS templates today; sending is gated until the SMS-provider plan ships |
+
+### Source 4: `Email & SMS Management V2.xlsx` (two-epic backlog) → story → schema/API mapping
+
+The current backlog (supersedes the V1 6-story spec in Source 1). Per-story verdicts and the V1→V2 change log are in `EMAIL_SMS_STORY_REVISIONS_V2.md`; deferrals are tracked in `EMAIL_SMS_KNOWN_ISSUES.md`.
+
+**Epic `76.x` — Predefined Email & SMS Management (edit-only; Email + SMS)**
+
+| Story | In scope | Schema / API element |
+|---|---|---|
+| 76.1 Listing | Yes | `GET /notification-templates`; list cols `template_name`, `notification_type`, `tag`, `channel`, `is_active`, `updated_at`; "last modified by/date" **derived from `admin_audit_logs`** (no `updated_by` column) — never-edited rows show *System / Seed* or blank |
+| 76.2 Search | Yes | `?search=` over `template_name` + `notification_type` (optionally `subject`) |
+| 76.3 Filter | Yes | `?tag=` (uses `System`, **not `Event`** — known-issues #5), `?channel=` (`EMAIL\|SMS`, **`Both` dropped**), `?is_active=` |
+| 76.4 Detail View | Yes | `GET /:id`; predefined `FROM`/`TO`/`sender_id` shown **read-only (system-managed)**; scheduling section labelled later-phase |
+| 76.5 Edit | Yes | `PUT /:id` two-tier matrix; editable `subject`(EMAIL)/`body`/`is_active`/`tag` + EMAIL `channel_config.{from_name,reply_to,cc_recipients,bcc_recipients}`; CC/BCC from predefined list (no manual free-text for predefined); WYSIWYG stores **HTML body only** |
+| 76.6 Scheduling | **Deferred** | `schedule_config`/`follow_up_config` kept nullable, no writer (known-issues #1); zero schema change |
+| 76.7 Placeholders | Yes | `trigger_events.available_placeholders` (code-controlled picker) |
+| 76.8 SMS provider | **Deferred** | client dependency (known-issues #2); SMS rows still stored/edited, sending gated |
+| 76.9 Audit Log | Yes | `GET /:id/audit-logs` over `admin_audit_logs`; "by user" derived |
+
+**Epic `77.x` — Custom Email Management (full CRUD; Email only)**
+
+| Story | In scope | Schema / API element |
+|---|---|---|
+| 77.1 Create | Yes (Email only) | `POST /notification-templates` with `channel = EMAIL`; FROM = free-text local part + **fixed-domain dropdown** validated against `allowed_from_domains`; TO/CC/BCC from predefined list **or** manual free-text; WYSIWYG stores HTML body only |
+| 77.2 Listing | Yes | custom listing **drops the Channel column** (all Email): `template_name`, `tag`, `notification_type`, `is_active` |
+| 77.3 Search | Yes | `?search=` over `template_name` + `notification_type` |
+| 77.4 Filter | Yes | `?tag=` (`System`); **no Channel filter** (Email-only); `?is_active=` |
+| 77.5 Detail View | Yes | `GET /:id`; subject always present (Email) |
+| 77.6 Edit | Yes | `PUT /:id` mirrors 77.1 field rules; full edit |
+| 77.7 Placeholders | Yes | code-controlled picker (same as 76.7) |
+| 77.8 Scheduling | **Deferred** | same as 76.6; zero schema change |
+| 77.9 Dynamic Recipient Resolution | **Deferred** | `to_recipients` stores literal strings/tokens now; send-time resolution later (known-issues #3); zero schema change |
+| 77.10 Audit Log | Yes | same as 76.9 |
+
+> **Custom SMS is out of scope** — `77.x` is Email-only. The SMS `channel_config` variant and `NotificationChannel.SMS` remain in the schema for `76.x` predefined SMS and a zero-migration future custom-SMS add (known-issues entry).
 
 ## CRUD Endpoints
 
@@ -320,9 +358,9 @@ All under `/admin/notification-templates`. Granular permissions reuse the existi
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/notification-templates` | List with pagination, search, filters (type, channel, is_active, is_predefined, notification_type) |
+| GET | `/notification-templates` | List with pagination, search, filters (tag, channel, is_active, is_predefined, notification_type) |
 | GET | `/notification-templates/:id` | Detail with full config + placeholder list for its trigger event |
-| POST | `/notification-templates` | Create **custom** template only (predefined cannot be created via API) |
+| POST | `/notification-templates` | Create **custom Email** template only (predefined cannot be created via API; **custom SMS is out of scope this sprint** — V2 `77.x` is Email-only, so `channel = SMS` is rejected on custom create) |
 | PUT | `/notification-templates/:id` | Update with predefined/custom edit rules enforced in service layer |
 | DELETE | `/notification-templates/:id` | Delete **custom** template only (predefined cannot be deleted) |
 
@@ -338,16 +376,16 @@ All under `/admin/notification-templates`. Granular permissions reuse the existi
 
 - **Predefined edit** (`PUT` with `is_predefined = true`):
   - Reject changes to `notification_type`, `channel`, and the system-controlled keys inside `channel_config` (`from_address`/`to_recipients` for EMAIL; `sender_id`/`to_recipients` for SMS)
-  - Allow row-level: `subject` (EMAIL only), `body`, `is_active`, `type`
+  - Allow row-level: `subject` (EMAIL only), `body`, `is_active`, `tag`
   - Allow inside `channel_config` (EMAIL): `from_name`, `reply_to`, `cc_recipients`, `bcc_recipients`
   - Allow inside `channel_config` (SMS): nothing (predefined SMS has no editable channel config)
-- **Custom edit/create**: validate `channel_config` against the row's `channel`:
+- **Custom edit/create** — **Email only this sprint** (V2 `77.x`): reject `channel = SMS` on custom create with 400. Validate `channel_config` against the row's `channel`:
   - EMAIL: extract domain from `from_address`, validate it exists in `allowed_from_domains WHERE is_active = true`; validate `to/cc/bcc` are well-formed email strings
-  - SMS: validate `sender_id` matches alphanumeric (≤ 11 chars) or E.164; validate `to_recipients` are E.164 phone strings
+  - SMS: the SMS `channel_config` validation (`sender_id` alphanumeric ≤ 11 chars or E.164; `to_recipients` E.164) **is retained in the validator** for **predefined SMS** rows (`76.x`) and a future custom-SMS add, but is **not reachable via custom create** while custom is Email-only
   - Reject any keys not in the channel's allowed key set (e.g., `from_name` on an SMS row → 400)
   - FK on `notification_type` → `trigger_events.slug` is enforced by the database
 - **Audit**: on every successful update, diff old vs new and insert audit rows (`entity_type = 'notification_template'`, `entity_id = template.id`, `performed_by` from JWT):
-  - One row per changed scalar field (e.g., `subject`, `body`, `is_active`, `type`)
+  - One row per changed scalar field (e.g., `subject`, `body`, `is_active`, `tag`)
   - One row per changed top-level key inside `channel_config` (e.g., changing `channel_config.from_name` produces one audit row reflecting only that key)
   - One row for any change to `schedule_config` as a whole (the array is logged as a single field — `previous_value` and `new_value` hold the full JSON array) — keeps audit simple for array reshuffles/inserts/deletes
   - One row for any change to `follow_up_config` as a whole (same rule as `schedule_config`)
@@ -356,9 +394,9 @@ All under `/admin/notification-templates`. Granular permissions reuse the existi
 
 | File | Change |
 |---|---|
-| `admin-backend-api/prisma/schema.prisma` | Add columns to `NotificationTemplate` (`template_name`, `type`, `channel_config`, `is_predefined`, `schedule_config`, `follow_up_config`); promote `channel` from `VarChar(50)` to `NotificationChannel` enum; add new enums `NotificationTemplateType`, `NotificationChannel`; add models `TriggerEvent`, `AllowedFromDomain`; add `notification_template` value to existing `AdminAuditEntityType` enum |
-| `admin-backend-api/prisma/migrations/` | New migration |
-| `admin-backend-api/src/database/seeds/notification-template.seeder.ts` | Mark the existing 18 seeded templates with `is_predefined = true`; add seeding for `trigger_events` (18 slugs) and `allowed_from_domains` (2 rows) |
+| `admin-backend-api/prisma/schema.prisma` | ✅ DONE (2026-06-11): columns added to `NotificationTemplate` (`template_name`, `tag` — both **required**, `channel_config`, `is_predefined`, `schedule_config`, `follow_up_config`); `channel` promoted to `NotificationChannel` enum; new enums + models `TriggerEvent`, `AllowedFromDomain`; `notification_template` added to `AdminAuditEntityType`; **id PKs are `Int`** (`notification_templates.id` converted BigInt→Int, `notification_logs.notification_template_id` follows) |
+| `admin-backend-api/prisma/migrations/20260611120000_sbe671_email_sms_management/` | ✅ DONE: hand-authored migration (enums, id conversion, channel promotion, new columns + backfill + NOT NULL, new tables, FK) |
+| `admin-backend-api/src/database/seeds/` | ✅ DONE: all 20 seeded templates get `is_predefined = true`, `template_name`, `tag` (via `TEMPLATE_META`); new `trigger-event.seeder.ts` (20 slugs, runs **before** the template seeder — FK) and `allowed-from-domain.seeder.ts` (2 rows) |
 | `admin-backend-api/src/admin/notification-template/notification-template.service.ts` | Enhanced CRUD with predefined/custom rules + audit logging |
 | `admin-backend-api/src/admin/notification-template/notification-template.controller.ts` | New filter/search query params + trigger events + allowed FROM domains + audit endpoints |
 | `admin-backend-api/src/admin/notification-template/dto/notification-template.dto.ts` | Expanded DTOs; separate Create (custom only) and Update (predefined vs custom) DTOs; drop `'PUSH'` from `NOTIFICATION_CHANNELS`; type `channel_config` as a discriminated union over `channel` |
@@ -367,18 +405,18 @@ All under `/admin/notification-templates`. Granular permissions reuse the existi
 
 ## Verification
 
-1. **Migration**: `npx prisma migrate dev` succeeds in admin-backend-api
-2. **Prisma generate**: `npx prisma generate` succeeds in all 4 other services (they use `db push` / generate only and share the schema)
-3. **Seeding**: `npx prisma db seed` upserts exactly 18 predefined templates + 18 trigger events (all with `is_custom = false`) + 2 allowed FROM domains
-4. **Coverage check**: Each of the 18 `notification_type` slugs has exactly one predefined row with a matching `trigger_events.slug` (FK constraint passes); the 4 dormant slugs (`lead_claimed_full_details`, `lead_claimed_by_other`, `lead_distribution_expired`, `lead_credits_renewed`) seed cleanly even though no `sendFromTemplate()` caller exists yet; all 18 seeded `trigger_events` rows have `is_custom = false`
+1. **Migration**: the hand-authored migration (`20260611120000_sbe671_email_sms_management`) replays cleanly via `migrate reset` / `migrate deploy` in admin-backend-api ✅ *(verified 2026-06-11)*
+2. **Prisma generate**: `npx prisma generate` succeeds in all 4 other services (schemas mirrored; they do **not** run `db push` for this change) ✅
+3. **Seeding**: seeders upsert exactly 20 predefined templates + 20 trigger events (all with `is_custom = false`) + 2 allowed FROM domains — 20 not 18: the template seeder also contains `ppl_subscription_canceled` and `ppl_product_order_payment`, which the FK requires trigger rows for ✅
+4. **Coverage check**: every seeded `notification_type` slug has exactly one predefined row with a matching `trigger_events.slug` (FK constraint passes); the 4 dormant slugs (`lead_claimed_full_details`, `lead_claimed_by_other`, `lead_distribution_expired`, `lead_credits_renewed`) seed cleanly even though no `sendFromTemplate()` caller exists yet ✅
 5. **List API**: `GET /notification-templates` supports search, type filter, format filter, is_active filter, is_predefined filter
 6. **Detail API**: `GET /notification-templates/:id` returns full config plus placeholder list for its trigger event
-7. **Edit predefined EMAIL**: `PUT /:id` allows `subject`/`body`/`is_active`/`type` + `channel_config.from_name`/`reply_to`/`cc_recipients`/`bcc_recipients`; rejects `notification_type`/`channel`/`channel_config.from_address`/`channel_config.to_recipients` changes with 400
-8. **Edit predefined SMS**: `PUT /:id` allows `body`/`is_active`/`type` only; any change inside `channel_config` returns 400
+7. **Edit predefined EMAIL**: `PUT /:id` allows `subject`/`body`/`is_active`/`tag` + `channel_config.from_name`/`reply_to`/`cc_recipients`/`bcc_recipients`; rejects `notification_type`/`channel`/`channel_config.from_address`/`channel_config.to_recipients` changes with 400
+8. **Edit predefined SMS**: `PUT /:id` allows `body`/`is_active`/`tag` only; any change inside `channel_config` returns 400
 9. **Edit predefined → audit**: After edit, `admin_audit_logs` has one row per changed scalar field or per changed top-level key inside `channel_config` with `entity_type = 'notification_template'`, `entity_id`, `previous_value`, `new_value`, `performed_by`, and a UI-friendly `note`
 10. **Create custom EMAIL**: `POST` with `channel = EMAIL` and `channel_config.from_address` at an allowed domain (e.g., `anything@theshowproducers.com`) succeeds; FROM at any other domain returns 400
-11. **Create custom SMS**: `POST` with `channel = SMS`, valid `channel_config.sender_id` (alphanumeric ≤ 11 chars or E.164) and `channel_config.to_recipients` (E.164 phones) succeeds; invalid sender_id or non-E.164 phones return 400
-12. **Cross-channel rejection**: `POST` with `channel = SMS` and an email-only key like `from_name` in `channel_config` returns 400; `POST` with `channel = EMAIL` and SMS-only key `sender_id` returns 400
+11. **Custom SMS rejected (Email-only scope)**: `POST` with `channel = SMS` returns 400 — custom create is Email-only this sprint (V2 `77.x`). (The SMS `channel_config` validator still covers predefined SMS edits and a future custom-SMS add, but custom create does not accept `channel = SMS`.)
+12. **Cross-channel rejection**: on the custom EMAIL path, `POST` with `channel = EMAIL` and an SMS-only key (`sender_id`) in `channel_config` returns 400; on the predefined SMS path, a `PUT` that adds an email-only key (`from_name`) to an SMS row's `channel_config` returns 400 (predefined SMS allows no `channel_config` edits). (Custom `channel = SMS` is already rejected at the channel check — step 11.)
 13. **Delete custom**: `DELETE /:id` works for custom, returns 400 for predefined
 14. **Backward compat**: All 14 active `sendFromTemplate()` flows still work — new columns are nullable, `channel` enum migration is no-op for existing rows (all `'EMAIL'`), the mailer doesn't read `channel_config` yet so existing behavior is unchanged. Smoke-test: trigger a registration email, password reset, contact us, lead distribution run, and a Stripe test webhook
 
@@ -413,7 +451,7 @@ The following items are either undecided, deferred, or worth surfacing before im
 | 16 | **Bulk operations (enable/disable all of type X, bulk delete)** | Defer | Not in scope; flag for follow-up. |
 | 17 | **`channel_config = null` vs `channel_config = {}`** | Soft | Predefined EMAIL rows have nullable system-controlled keys. Store as `{ "from_name": "...", "reply_to": "...", "from_address": null, "to_recipients": null, "cc_recipients": [], "bcc_recipients": [] }` or as `{ "from_name": "...", "reply_to": "..." }` (system keys absent)? Pick a convention for consistency. |
 | 18 | **Trigger event `label` source** | Soft | `trigger_events.label` is a human-readable name for the dropdown. Who curates these — eng or content team? Confirm content owner. |
-| 19 | **Custom trigger events: admin-creatable?** | RESOLVED — No. | `trigger_events` remains strictly code-controlled. `is_custom` column + composite unique `(slug, is_custom)` are a structural guard ensuring 1:1 predefined-trigger ↔ template mapping. All 18 seeded rows are `is_custom = false`. No `POST /trigger-events` endpoint. |
+| 19 | **Custom trigger events: admin-creatable?** | RESOLVED — No. | `trigger_events` remains strictly code-controlled. `slug` is globally unique (FK target); `is_custom` is a flag marking the predefined set — all seeded rows are `is_custom = false`. No `POST /trigger-events` endpoint. *(2026-06-11: composite-unique + partial-index design replaced by global unique slug — Postgres FKs can't reference partial unique indexes; future custom triggers need distinct slugs.)* |
 
 ### Scope already deferred (re-confirming)
 
@@ -435,5 +473,7 @@ The following are explicitly **out of scope** for this plan but listed here so r
 ## Related documents
 
 - `EMAIL_SMS_DB_DESIGN_REVIEW.md` — concise TL-facing design review (column→requirement traceability, JSONB shapes, migration ordering)
-- `EMAIL_SMS_STORY_REVISIONS.md` — suggested revisions to the 6 user stories to match this CRUD scope
+- `EMAIL_SMS_STORY_REVISIONS.md` — V1: suggested revisions to the original 6 user stories (historical baseline)
+- `EMAIL_SMS_STORY_REVISIONS_V2.md` — **V2 (current)**: story-by-story verdicts across the two-epic backlog (76.x / 77.x) + the V1→V2 change log
+- `EMAIL_SMS_KNOWN_ISSUES.md` — running register of deferrals, dependencies, and contradictions (reconciled against V2)
 - `EMAIL_SMS_EFFORT_JUSTIFICATION.md` / `EMAIL_SMS_EFFORT_SUMMARY.md` — effort justification (engineering + management audiences)
