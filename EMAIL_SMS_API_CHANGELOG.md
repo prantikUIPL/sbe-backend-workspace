@@ -64,3 +64,103 @@ New list row:
 - Any consumer reading `subject`, `body`, `language` or `created_at` from the **list** response must switch to `GET /notification-templates/:id`.
 - Strictly-typed consumers must treat `id` as a number.
 - No known existing consumers: no backend service calls this endpoint (only the permission seeder references the URL); the admin frontend for this module is being built against the new spec.
+
+---
+
+## 2026-06-11 — `GET /admin/notification-templates/:id` (detail)
+
+**Repo:** `admin-backend-api`, branch `feature/SBE-671`
+**Stories:** 76.4 (predefined detail view), 77.5 (custom detail view) — both UIs use this one endpoint; 76.7 (placeholders) is served by the joined `trigger_event.available_placeholders`.
+
+### Response — **BREAKING**
+
+| Change | Before | After |
+|---|---|---|
+| `id` type | string (`"42"`) | number (`42`) |
+| `subject` when absent (SMS rows) | key **omitted** (old mapper converted `null` → `undefined`) | explicit `null` |
+| Non-numeric `:id` (e.g. `/abc`) | undefined behavior (`NaN` → Prisma error / 500) | `400` `Validation failed (numeric string is expected)` — behavior fix, listed here because it changes observable responses |
+
+### Response — ADDITIVE
+
+New top-level fields (returned **as stored**; the mailer does not consume them this phase):
+
+| Field | Type | Notes |
+|---|---|---|
+| `template_name` | string | display name |
+| `tag` | enum `Store \| Internal \| Vendor \| Product \| PPL \| System` | |
+| `channel_config` | object \| null | EMAIL: `from_address`/`from_name`/`reply_to`/`to_recipients`/`cc_recipients`/`bcc_recipients`; SMS: `sender_id`/`to_recipients`. For **predefined** templates FROM/TO/`sender_id` are system-managed — render read-only (76.4) |
+| `is_predefined` | boolean | `true` = 76.x epic, `false` = 77.x epic |
+| `schedule_config` | array \| null | scheduling UI is a later phase; returned as stored |
+| `follow_up_config` | array \| null | later phase; returned as stored |
+
+New **required** nested object (the FK `notification_type` → `trigger_events.slug` is NOT NULL, so it is always present):
+
+```json
+"trigger_event": {
+  "id": 7,
+  "slug": "welcome_email",
+  "label": "Admin User Created",
+  "available_placeholders": ["name", "siteName", "loginUrl", "tempPassword", "supportEmail"],
+  "is_custom": false
+}
+```
+
+`available_placeholders` is a string array or `null` — drives the WYSIWYG placeholder picker (code-controlled; not admin-editable).
+
+### Full example response
+
+```json
+{
+  "id": 1,
+  "notification_type": "welcome_email",
+  "template_name": "Welcome Email",
+  "tag": "System",
+  "channel": "EMAIL",
+  "subject": "Welcome to {{siteName}}",
+  "body": "<p>Hello {{name}}</p>",
+  "language": "en",
+  "channel_config": null,
+  "is_predefined": true,
+  "schedule_config": null,
+  "follow_up_config": null,
+  "is_active": true,
+  "created_at": "2026-06-11T00:00:00.000Z",
+  "updated_at": "2026-06-11T00:00:00.000Z",
+  "trigger_event": {
+    "id": 7,
+    "slug": "welcome_email",
+    "label": "Admin User Created",
+    "available_placeholders": ["name", "siteName", "loginUrl", "tempPassword", "supportEmail"],
+    "is_custom": false
+  }
+}
+```
+
+### Justifications
+
+1. **Full row + joined placeholders = the 76.4/77.5 spec** ("returns full row + `available_placeholders` joined from `trigger_events`"). The nested `trigger_event` object carries both the human-readable `label` (read-only display field) and the placeholder list (picker) in one shape that mirrors the DB relation; `is_custom` is included now so the edit phase doesn't need another contract change.
+2. **`id` as number** — same Int-PK justification as the listing entry above.
+3. **Explicit `null` over omitted keys** — the row is now returned exactly as selected from the DB (no mapping layer, house convention); strictly-typed consumers get a stable shape.
+4. **No `last_modified_by`** — same as listing entry justification #5: audit info via a separate audit-logs endpoint in a later phase (known-issues #8).
+
+### Caller impact
+
+- Strictly-typed consumers must treat `id` as a number and `subject` as `string | null` (key always present).
+- Frontends checking `'subject' in response` must switch to a null check.
+- `POST` / `PUT` responses are **unchanged** this phase (still the old baseline shape, `id` as string) — they get reworked in the edit-endpoint phase.
+- No known existing consumers (same as listing entry).
+
+---
+
+## 2026-06-11 — `GET /admin/notification-templates/:id` — out-of-range id now `400` (was `500`/`404`)
+
+**Repo:** `admin-backend-api`, branch `feature/SBE-671` (behavior fix, found in code review)
+
+| Request | Before | After |
+|---|---|---|
+| `:id` beyond Postgres INT4 (e.g. `/2147483648`) | Prisma `P2020` → raw `500` | `400` `Validation failed (id out of range)` |
+| `:id` zero or negative (e.g. `/0`, `/-1`) | `404` (id can never exist) | `400` `Validation failed (id out of range)` |
+
+`id` is a positive INT4 autoincrement primary key; the stock `ParseIntPipe` has no range check, so over-range values passed validation and blew up at the database layer, while zero/negative values burned a DB round-trip to 404. Replaced with a shared `ParseIntIdPipe` (`src/common/pipes/parse-int-id.pipe.ts`) that rejects ids outside `[1, 2147483647]` at the request boundary. The endpoint's error contract is now fully 400/404 as documented.
+
+Note: the same pipe was applied to the booth-agreements `:id` routes (GET/PATCH/DELETE), which had the identical hole — recorded here for traceability only; that module is outside the Email & SMS scope.
