@@ -158,6 +158,7 @@ V2 custom "Email Template Listing" (file row 14) adds an **event selector on the
 
 ## Cosmetic / non-functional notes (no action needed by us)
 
+- **Catalog amendment 2026-06-12 (cart-module template):** the cart team's dev work added an 18th+1 template `cart_updated_notification` to the shared `notification-template.seeder.ts`. The seeder's fail-loud META guard (#15/#16) caught it at the pre-push gate as designed; registered with `template_name: 'Cart Proposal Updated'`, `tag: Store`, `is_predefined: true`, plus a 21st `trigger_events` row (slug `cart_updated_notification`, placeholders `name`/`cart_number`/`version`). Consequence for the module UI: the predefined listing and the trigger-events dropdown now show this row — it is **outside the 18-template Email & SMS UI scope** but fully editable under the standard predefined rules (subject/body/is_active/config keys).
 - Custom-epic Search / Filter stories are still titled "**Email & SMS** Template Search/Filter" although the custom epic is **Email-only**. The custom Filter (row 16) correctly omits the Channel filter; only the title carries the leftover wording.
 - Predefined Listing (row 2) names its data source "Auto_Email_Notification_Triggers configuration"; we source the list from the seeded `notification_templates` table. Same data, different label.
 

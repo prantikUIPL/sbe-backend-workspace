@@ -425,3 +425,19 @@ Carried by migration `20260611120000_sbe671_email_sms_management` (section 2 ext
 - **Email & SMS API consumers:** none — endpoint contracts already documented `id` as number (see the 2026-06-11 listing/detail entries).
 - **Payment-flow/PPL team:** regenerate the Prisma client after pulling; any code constructing `BigInt` values for these fields should switch to plain numbers (one admin call site fixed as above; their specs still build `BigInt` fixtures — passing, left to them). Their three expire-date/lead-threshold FK columns have no `@relation` in the Prisma schema (DB-level FKs only) — recorded factually, their call whether to add relations.
 - **Deploy note:** the first `migrate deploy` to an environment that has the coupon migrations applied will rewrite the five columns and FKs in place.
+
+---
+
+## 2026-06-12 — Seed-data catalog: +1 trigger event & predefined template (`cart_updated_notification`)
+
+**Repo:** `admin-backend-api`, branch `feature/SBE-671` — data-only, no contract change.
+**Why:** the cart team's dev work added a `cart_updated_notification` template to the shared seeder catalog after the SBE-671 catalog was drawn up; the seeder's fail-loud `TEMPLATE_META` guard caught it at the pre-push gate. Registered per the standing pattern for FK-required out-of-module slugs.
+
+### Behavior — ADDITIVE (data, not contract)
+
+- `GET /admin/trigger-events` now returns **21** rows (was 20): new row `{ slug: "cart_updated_notification", label: "Cart Proposal Updated", available_placeholders: ["name", "cart_number", "version"], is_custom: false }`.
+- `GET /admin/notification-templates` (with `is_predefined=true`) gains one row: `template_name "Cart Proposal Updated"`, `tag Store`, `channel EMAIL`.
+
+### Caller impact
+
+None structural. Frontends listing predefined templates or the trigger dropdown will see the new entry; it is outside the 18-template Email & SMS UI scope but behaves as any predefined row (two-tier edit rules apply).
