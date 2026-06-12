@@ -206,3 +206,122 @@ Unpaginated array of **active** (`is_active = true`) whitelist domains a custom 
 ### Permissions (action required)
 
 Two new permission keys: `trigger-events.list` and `allowed-from-domains.list`. Seeded by `permission.seeder.ts`, granted to **Admin/Super Administrator only** by `role.seeder.ts`, and mapped to permission groups (`View Trigger Events` / `View Allowed FROM Domains`) by `permission-group.seeder.ts`. **Environments must re-run the seeders** — until then even Admin gets `403` on both endpoints. The re-run fixes Admin/Super Administrator only; **every other role** (the other seeded roles, e.g. the SBE team roles, and all custom roles) additionally needs the two new groups enabled per role via the role-permissions UI (or the raw `POST /roles/:id/permissions`) before its users can load the dropdowns. (The seed re-run is safe for manually deactivated FROM domains: the domain seeder no longer touches existing rows on re-run.) Other errors follow the standard auth contract (401/403/500); no request parameters, so no 400s.
+
+---
+
+## 2026-06-11 — `POST` / `PUT` / `DELETE /admin/notification-templates` (custom create, two-tier edit, custom delete)
+
+**Repo:** `admin-backend-api`, branch `feature/SBE-671`
+**Stories:** 77.1 (create custom EMAIL template), 76.5 + 77.6 (edit predefined/custom), design-doc DELETE (custom-only). Replaces the interim scaffolding handlers wholesale.
+
+### `POST /notification-templates` — **BREAKING** (payload + response reworked)
+
+| Change | Before | After |
+|---|---|---|
+| Required body fields | `notification_type`, `channel`, `subject`, `body` | + `template_name` (≤255), `tag` (enum), `channel_config` (object, see below); `subject` stays required (≤255) |
+| `channel` | `EMAIL` or `SMS` accepted | **`EMAIL` only** — anything else → `400` `Only EMAIL channel is supported` |
+| `template_name` / `tag` | hardcoded server-side (slug / `System`) | caller-supplied |
+| Duplicate check | `409` on same `(notification_type, channel, language)` | **removed** — no uniqueness for custom templates; the same payload twice creates two rows |
+| `201` body | old baseline shape, `id` as string | **detail shape** (same as `GET /:id`, incl. `trigger_event` join), `id` as number |
+| `Location` header | — | `/api/v1/notification-templates/<id>` |
+
+New required `channel_config` object (unknown keys, e.g. `sender_id`, → `400 property sender_id should not exist`):
+
+| Key | Rules |
+|---|---|
+| `from_address` | required, valid email ≤255; **domain must be an active allowed FROM domain** (else `400` with `errorType: "from_address_domain"`); local part free-form |
+| `from_name` | required, string ≤255 |
+| `reply_to` | required, valid email ≤255 |
+| `to_recipients` | required, array of 1–50 **literal email addresses** |
+| `cc_recipients` / `bcc_recipients` | optional, arrays of ≤50 literal email addresses |
+
+New server-side validations (all `400`):
+
+- `notification_type` must match an existing trigger event (unchanged from interim handler).
+- **Placeholder whitelist:** every `{{token}}` in `subject`/`body` must be in the trigger event's `available_placeholders` — `Unknown placeholder(s) for trigger "...": {{...}}`. Handlebars block tokens (`{{#if}}`/`{{/if}}`/`{{else}}`) are ignored by the check.
+- **Recipients are literal email addresses only** — `{placeholder}` tokens in recipient arrays are rejected until the dynamic-recipient-resolution phase (77.9 / known-issues #3) loosens this.
+
+Created rows are always `is_predefined: false`. Every create writes an admin-audit row (see Audit below).
+
+### `PUT /notification-templates/:id` — **BREAKING** (two-tier edit matrix enforced)
+
+Previously only `subject`/`body`/`is_active` were accepted, on any row, unaudited. Now all of `notification_type`, `template_name`, `tag`, `subject`, `body`, `is_active`, `channel_config` (all optional) are accepted, gated per tier:
+
+| Field | Predefined | Custom |
+|---|---|---|
+| `notification_type` | `400` (system-controlled) | editable (must match an existing trigger event) |
+| `template_name`, `tag`, `body`, `is_active` | editable | editable |
+| `subject` | editable on EMAIL rows; `400` on SMS rows | editable |
+| `channel_config.from_address` / `to_recipients` | `400` (system-controlled) | editable (FROM-domain whitelist re-checked) |
+| `channel_config.from_name` / `reply_to` / `cc_recipients` / `bcc_recipients` | editable on EMAIL rows; **any** config key on a predefined SMS row → `400` | editable |
+| `channel` / `is_predefined` | not in the payload — never editable | never editable |
+
+- **`channel_config` merge:** provided keys replace the stored keys wholesale (`cc_recipients: []` clears the list); unprovided keys are preserved.
+- **Placeholder whitelist** applies to both tiers; re-pointing a custom template's `notification_type` re-validates the *unchanged* subject/body against the new trigger's placeholders.
+- The duplicate-`409` is gone (same reasoning as POST).
+- `200` body is now the **detail shape** (was the old string-id baseline); `:id` is now validated (`400` instead of undefined behavior on non-numeric/out-of-range ids).
+- **Per-field audit:** each changed field (scalars and individual `channel_config` keys) writes its own admin-audit row. A no-change request writes nothing and returns the stored row.
+
+### `DELETE /notification-templates/:id` — **BREAKING** (custom-only)
+
+- Predefined rows → `400` `Predefined templates cannot be deleted` (previously any row could be deleted).
+- `notification_logs` rows referencing the template are removed with it (FK cascade) — intended behavior; a no-op today since nothing sends custom templates yet, but once custom sending ships, deleting a template deletes its send history.
+- Deletion writes an admin-audit row with the pre-delete snapshot.
+- `:id` validated as in PUT. Response stays `{ "message": "Notification template deleted successfully" }`.
+
+### Audit (amends the detail-entry note of 2026-06-11)
+
+Create/edit/delete history is recorded in `admin_audit_logs` (`entity_type = notification_template`, `entity_id` = template id, `performed_by` = JWT admin) inside the write transaction, booth-agreements style. It is consumed via the **central audit-log endpoint's `entity_type`/`entity_id` filters** — there is **no scoped `GET /notification-templates/:id/audit-logs` endpoint** (the earlier detail entry anticipated one; decision 2026-06-11: central endpoint instead, no extra permission key).
+
+### Predefined-uniqueness decision (recorded)
+
+Predefined templates are unique per `(notification_type, channel)` so a send-time query by trigger + predefined returns a single row. Enforced by a **seeder catalog assertion + service construction** (create always writes `is_predefined: false`; edit never flips the flag) — **no DB constraint**, because Prisma PSL cannot declare partial unique indexes and a sibling repo's `db push` would silently drop a raw-SQL one. Holds for all 20 seeded rows today.
+
+### Seeders & permissions (action required)
+
+- `notification-template.seeder.ts` is now **create-only** (closes known-issues #15): existing rows are skipped on re-run, so admin edits to predefined copy are never clobbered. It also fail-loudly asserts the catalog has no duplicate `(notification_type, channel)` pair.
+- `permission-group.seeder.ts` adds four `notification_template` groups — View / Create / Update / Delete Notification Template(s), Create/Update/Delete depending on View (closes known-issues #14). **Environments must re-run the seeders** for the groups to appear in the role-permissions UI; the five permission keys themselves were already seeded and granted to Admin/Super Administrator. Other roles need the new groups enabled per role.
+
+### Caller impact
+
+- Any consumer of the old POST payload must add `template_name`, `tag` and `channel_config`, and stop sending `channel: "SMS"`.
+- Consumers reading the old string-id `201`/`200` bodies must switch to the detail shape (number `id`, explicit nulls, nested `trigger_event`).
+- Code relying on the duplicate-`409` must drop that handling.
+- No known existing consumers (same as the listing entry).
+
+---
+
+## 2026-06-12 — Story-alignment fixes: listing filters/search, optional `from_name`/`reply_to`, CC/BCC dedup, HTML sanitization
+
+**Repo:** `admin-backend-api`, branch `feature/SBE-671`
+**Why:** an implementation-vs-stories audit (2026-06-12) found six deviations from the V2 story text; five are code fixes recorded here (the sixth — DELETE has no backing story — is documentation-only, see known-issues #18). All changes are pre-release; no known existing consumers.
+
+### `GET /notification-templates` — search cap & multi-select filters
+
+| Change | Before | After |
+|---|---|---|
+| `search` max length | 150 | **254** (story 76.2/77.3: "Max length: 254 characters") |
+| `tag` | single enum value | **multi-select**: repeat the param (`?tag=Store&tag=PPL`) or CSV (`?tag=Store,PPL`) — OR among values, AND across filters (76.3/77.4) |
+| `channel` | single enum value | **multi-select**, same syntax (`?channel=EMAIL,SMS`) |
+| invalid filter value message | `tag must be one of: …` | `each tag must be one of: …` (likewise `each channel …`) |
+
+Single-value calls keep working unchanged (a lone value is a one-element selection). An empty filter (`?tag=`) is treated as no filter. `is_active` stays single-valued (the stories specify multi-select for Type/Channel only).
+
+### `POST` / `PUT /notification-templates` — recipient & sanitization alignment
+
+| Change | Before | After |
+|---|---|---|
+| `channel_config.from_name` (POST) | required | **optional** (story 77.1 "if provided"); stored as `null` when omitted |
+| `channel_config.reply_to` (POST) | required | **optional** (story 77.1 "if provided"); stored as `null` when omitted |
+| `cc_recipients` / `bcc_recipients` | stored as sent | **de-duplicated case-insensitively** on write (first occurrence's casing kept) — POST and PUT (76.5/77.1/77.6). `to_recipients` is not deduped (not story-specified; cross-field dedup stays deferred with DRR, known-issues #3) |
+| `body` | stored verbatim | **sanitized on write**: `script`/`iframe`/`object`/`svg` blocks (contents included) and `embed`/`form`/`base`/`meta`/`link` tags removed; `on*` event-handler and `srcdoc` attributes stripped; `href`/`src`/`action`/`formaction`/`background`/`xlink:href` values resolving to `javascript:`/`vbscript:`/non-image `data:` removed (`data:image/*` kept for WYSIWYG inline images). Formatting tags, tables, inline styles, hyperlinks, hosted/inline images and Handlebars `{{tokens}}`/block helpers pass through unchanged |
+| `subject` / `template_name` / `channel_config.from_name` | stored verbatim | **HTML tags stripped** (plain-text fields; same `SanitizeText` strip used by the Shows module) |
+
+Sanitization runs before validation, so a body that is *only* a script block now 400s as `body cannot be empty`. Sanitizer: `src/admin/notification-template/utils/email-html-sanitizer.util.ts` (blocklist, not allowlist — chosen so the seeded predefined bodies, which use tables/headings/links, round-trip through PUT byte-identical; rationale in the file header).
+
+### Caller impact
+
+- Frontends may now omit `from_name`/`reply_to` on create; rendered detail views must handle `null` for both.
+- A consumer sending duplicate CC/BCC entries gets the deduped list back in the detail-shape response (the stored truth).
+- Anything relying on `<script>`-bearing bodies surviving a write must stop; no legitimate flow did.
+- Strictly-typed consumers of the listing query: `tag`/`channel` are now `string[]` in the OpenAPI schema.

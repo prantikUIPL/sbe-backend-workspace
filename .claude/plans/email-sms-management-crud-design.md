@@ -323,7 +323,7 @@ The current backlog (supersedes the V1 6-story spec in Source 1). Per-story verd
 
 | Story | In scope | Schema / API element |
 |---|---|---|
-| 76.1 Listing | Yes | `GET /notification-templates`; list cols `template_name`, `notification_type`, `tag`, `channel`, `is_active`, `updated_at`; "last modified by/date" is **not in the listing response** (decision 2026-06-11) — served by the separate audit-logs endpoint (`GET /:id/audit-logs` over `admin_audit_logs`); BA to update 76.1 (known-issues #8) |
+| 76.1 Listing | Yes | `GET /notification-templates`; list cols `template_name`, `notification_type`, `tag`, `channel`, `is_active`, `updated_at`; "last modified by/date" is **not in the listing response** (decision 2026-06-11) — served by the central audit-log endpoint (`entity_type`/`entity_id` filters over `admin_audit_logs`; no scoped endpoint — decision 2026-06-11); BA to update 76.1 (known-issues #8) |
 | 76.2 Search | Yes | `?search=` over `template_name` + `notification_type` (optionally `subject`) |
 | 76.3 Filter | Yes | `?tag=` (uses `System`, **not `Event`** — known-issues #5), `?channel=` (`EMAIL\|SMS`, **`Both` dropped**), `?is_active=` |
 | 76.4 Detail View | Yes | `GET /:id`; predefined `FROM`/`TO`/`sender_id` shown **read-only (system-managed)**; scheduling section labelled later-phase |
@@ -331,7 +331,7 @@ The current backlog (supersedes the V1 6-story spec in Source 1). Per-story verd
 | 76.6 Scheduling | **Deferred** | `schedule_config`/`follow_up_config` kept nullable, no writer (known-issues #1); zero schema change |
 | 76.7 Placeholders | Yes | `trigger_events.available_placeholders` (code-controlled picker) |
 | 76.8 SMS provider | **Deferred** | client dependency (known-issues #2); SMS rows still stored/edited, sending gated |
-| 76.9 Audit Log | Yes | `GET /:id/audit-logs` over `admin_audit_logs`; "by user" derived |
+| 76.9 Audit Log | Yes | Central audit-log endpoint with `entity_type = notification_template` / `entity_id` filters over `admin_audit_logs` (no scoped `GET /:id/audit-logs` — decision 2026-06-11); "by user" derived; rows written per changed field inside the CRUD write transactions |
 
 **Epic `77.x` — Custom Email Management (full CRUD; Email only)**
 
@@ -358,11 +358,11 @@ All under `/admin/notification-templates`. Granular permissions reuse the existi
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/notification-templates` | List with pagination, search, filters (tag, channel, is_active, is_predefined, notification_type) |
-| GET | `/notification-templates/:id` | Detail with full config + placeholder list for its trigger event |
-| POST | `/notification-templates` | Create **custom Email** template only (predefined cannot be created via API; **custom SMS is out of scope this sprint** — V2 `77.x` is Email-only, so `channel = SMS` is rejected on custom create) |
-| PUT | `/notification-templates/:id` | Update with predefined/custom edit rules enforced in service layer |
-| DELETE | `/notification-templates/:id` | Delete **custom** template only (predefined cannot be deleted) |
+| GET | `/notification-templates` | List with pagination, search, filters (tag, channel, is_active, is_predefined, notification_type) (built 2026-06-11) |
+| GET | `/notification-templates/:id` | Detail with full config + placeholder list for its trigger event (built 2026-06-11) |
+| POST | `/notification-templates` | Create **custom Email** template only (predefined cannot be created via API; **custom SMS is out of scope this sprint** — V2 `77.x` is Email-only, so `channel = SMS` is rejected on custom create) (built 2026-06-11; amendments: no duplicate-409 — custom templates have no uniqueness; placeholder whitelist on subject/body; recipients are literal emails only until DRR; 201 returns the detail shape + `Location`) |
+| PUT | `/notification-templates/:id` | Update with predefined/custom edit rules enforced in service layer (built 2026-06-11; amendment: `template_name` is editable on **both** tiers; per-field audit rows; no-op writes nothing) |
+| DELETE | `/notification-templates/:id` | Delete **custom** template only (predefined cannot be deleted) (built 2026-06-11; hard delete — `notification_logs` cascade) |
 
 ### Supporting endpoints (read-only)
 
@@ -370,7 +370,7 @@ All under `/admin/notification-templates`. Granular permissions reuse the existi
 |---|---|---|
 | GET | `/trigger-events` | List trigger events for dropdown (standalone module — built 2026-06-11) |
 | GET | `/allowed-from-domains` | List allowed FROM domains (for client-side validation hint) (standalone module — built 2026-06-11) |
-| GET | `/notification-templates/:id/audit-logs` | Edit history (queries `admin_audit_logs` where `entity_type = 'notification_template'` and `entity_id = :id`) |
+| GET | `/notification-templates/:id/audit-logs` | **Not built — superseded (decision 2026-06-11):** edit history is consumed via the **central audit-log endpoint's** `entity_type`/`entity_id` filters (booth-agreements approach); no scoped endpoint, no extra permission key |
 
 ### Service-layer enforcement
 
@@ -441,7 +441,7 @@ The following items are either undecided, deferred, or worth surfacing before im
 
 | # | Gap | Severity | Notes |
 |---|---|---|---|
-| 9 | **DELETE — soft or hard?** | Block | For custom templates, is `DELETE /:id` a hard delete or a soft delete (`deleted_at` column)? Most admin entities in this codebase use soft delete — check existing pattern in `admin-backend-api`. |
+| 9 | **DELETE — soft or hard?** | RESOLVED — Hard delete (2026-06-11). | Built as a hard delete: the schema has no `deleted_at` column, the pre-delete snapshot is preserved in the audit row, and `notification_logs` rows cascade with the template (intended; documented in `EMAIL_SMS_API_CHANGELOG.md`). |
 | 10 | **Multi-language strategy** | Soft | `language` column already exists (default `en`). Plan doesn't specify whether one template = one row per language, or one row with translated variants. Today's seeder writes only `en`; confirm if Spanish/other are expected. |
 | 11 | **Predefined SMS templates — should any be seeded?** | Block | The client Excel has 4 SMS templates. Currently the plan seeds 0 SMS rows (the 18 seeded slugs are all EMAIL). Decide: seed the 4 SMS slugs as predefined rows (channel=SMS, body=copy from Excel, channel_config=null until provider ships), or wait until the SMS provider plan. |
 | 12 | **`subject` for SMS** | Soft | `subject` stays nullable. UI should hide the subject field when `channel = SMS`; service-layer should reject non-null subject on SMS rows (or just ignore it). Confirm preference. |
