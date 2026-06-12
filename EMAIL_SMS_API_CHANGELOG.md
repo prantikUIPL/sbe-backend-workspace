@@ -325,3 +325,40 @@ Sanitization runs before validation, so a body that is *only* a script block now
 - A consumer sending duplicate CC/BCC entries gets the deduped list back in the detail-shape response (the stored truth).
 - Anything relying on `<script>`-bearing bodies surviving a write must stop; no legitimate flow did.
 - Strictly-typed consumers of the listing query: `tag`/`channel` are now `string[]` in the OpenAPI schema.
+
+---
+
+## 2026-06-12 — `GET /admin/notification-templates` — trigger label in list rows + searchable
+
+**Repo:** `admin-backend-api`, branch `feature/SBE-671`
+**Stories:** 76.1/77.2 (listing "Trigger Event" column), 76.2/77.3 (search by Template Name and **Trigger Event**).
+**Why:** a re-verification audit (2026-06-12, 2nd pass) noted the listing exposed only the trigger slug (`notification_type`) — the human-readable label lived solely in the detail join, so a search for the displayed label text (e.g. "Admin User Created") matched nothing.
+
+### Response — ADDITIVE
+
+Each list row now includes the joined trigger-event label (same nested shape as the detail endpoint, label only):
+
+```json
+{
+  "id": 42,
+  "template_name": "Welcome Email",
+  "notification_type": "welcome_email",
+  "tag": "System",
+  "channel": "EMAIL",
+  "is_active": true,
+  "is_predefined": true,
+  "updated_at": "2026-06-11T00:00:00.000Z",
+  "trigger_event": { "label": "Admin User Created" }
+}
+```
+
+The FK is NOT NULL, so `trigger_event` is always present. Use `trigger_event.label` for the listing's Trigger Event column; `notification_type` remains the slug.
+
+### Behavior — ADDITIVE
+
+`search` now also matches the trigger event `label` (case-insensitive substring), alongside `template_name`, `subject` and `notification_type`. A keyword can therefore return rows it previously missed; no previously-matching row stops matching.
+
+### Caller impact
+
+- None breaking. Strictly-typed consumers gain a required `trigger_event: { label: string }` key on list rows.
+- Note: `subject` participating in search is a code-side extension beyond the search stories — recorded in known-issues #17.
