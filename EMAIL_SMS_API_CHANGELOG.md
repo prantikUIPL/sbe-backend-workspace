@@ -362,3 +362,31 @@ The FK is NOT NULL, so `trigger_event` is always present. Use `trigger_event.lab
 
 - None breaking. Strictly-typed consumers gain a required `trigger_event: { label: string }` key on list rows.
 - Note: `subject` participating in search is a code-side extension beyond the search stories — recorded in known-issues #17.
+
+---
+
+## 2026-06-12 — `:id` routes — hex/exponent id strings now rejected (was: resolved to wrong rows)
+
+**Repo:** `admin-backend-api`, branch `feature/SBE-671`
+**Routes:** `GET`/`PUT`/`DELETE /notification-templates/:id` and `GET`/`PATCH`/`DELETE /booth-agreements/:id` (the six routes guarded by `ParseIntIdPipe`).
+**Why:** the 2026-06-12 live HTTP smoke found `GET /notification-templates/0x10` returning **200 with row 16**. The global `ValidationPipe({ transform: true })` coerces Number-typed `@Param` values with `+value` *before* the param-scoped pipe runs, so `"0x10"` (and `"1e2"`, `" 16 "`, …) reached `ParseIntIdPipe` as an already-valid integer and its numeric-string check (`/^-?\d+$/`) never saw the original text.
+
+### Behavior — CORRECTIVE (technically breaking)
+
+| id string | Before | After |
+|---|---|---|
+| `0x10`, `0b101` (hex/binary) | 200/404 — silently resolved as the coerced number (`0x10` → row 16) | **400** `Validation failed (numeric string is expected)` |
+| `1e2` (exponent) | resolved as 100 | **400** same message |
+| `" 16 "` (whitespace-padded) | resolved as 16 | **400** same message |
+| plain decimal (`16`) | works | works, unchanged |
+| `abc`, `1.5`, `0`, `-1`, `> INT4_MAX` | 400 | 400, unchanged |
+
+### Implementation
+
+New `RawParam` custom param decorator (`src/common/decorators/raw-param.decorator.ts`) extracts the route param as its **raw string** — custom-decorator args are exempt from the global pipe's primitive coercion — so `ParseIntIdPipe` validates the original text. The six call sites changed from `@Param('id', ParseIntIdPipe)` to `@RawParam('id', ParseIntIdPipe)`; the pipe itself, its 400 messages, and the Swagger docs are unchanged.
+
+### Caller impact
+
+- None for well-behaved callers: canonical decimal ids behave identically.
+- Anything that relied on hex/exponent/padded id strings resolving (no legitimate flow did) now gets the already-documented 400.
+- **Scope note:** all other admin routes using plain `ParseIntPipe` (~60 call sites) still accept coerced forms — the repo-wide hole and its durable fix remain a separate, undecided item (same standing decision as the INT4/global-filter question recorded 2026-06-11).
