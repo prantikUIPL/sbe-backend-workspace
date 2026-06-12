@@ -163,7 +163,7 @@ New **required** nested object (the FK `notification_type` → `trigger_events.s
 
 `id` is a positive INT4 autoincrement primary key; the stock `ParseIntPipe` has no range check, so over-range values passed validation and blew up at the database layer, while zero/negative values burned a DB round-trip to 404. Replaced with a shared `ParseIntIdPipe` (`src/common/pipes/parse-int-id.pipe.ts`) that rejects ids outside `[1, 2147483647]` at the request boundary. The endpoint's error contract is now fully 400/404 as documented.
 
-Note: the same pipe was applied to the booth-agreements `:id` routes (GET/PATCH/DELETE), which had the identical hole — recorded here for traceability only; that module is outside the Email & SMS scope.
+Note: the same pipe was applied to the booth-agreements `:id` routes (GET/PATCH/DELETE), which had the identical hole — recorded here for traceability only; that module is outside the Email & SMS scope. The same review round also removed booth-agreements' class-level `@ApiInternalServerErrorResponse()` decorator (+ its import) as a redundancy dedup — `@ApiAuthResponses()` on the class already composes the identical 500 response, so generated Swagger output is byte-identical (verified). Recorded 2026-06-12 after a branch-scope audit flagged the removal as undocumented.
 
 ---
 
@@ -390,3 +390,38 @@ New `RawParam` custom param decorator (`src/common/decorators/raw-param.decorato
 - None for well-behaved callers: canonical decimal ids behave identically.
 - Anything that relied on hex/exponent/padded id strings resolving (no legitimate flow did) now gets the already-documented 400.
 - **Scope note:** all other admin routes using plain `ParseIntPipe` (~60 call sites) still accept coerced forms — the repo-wide hole and its durable fix remain a separate, undecided item (same standing decision as the INT4/global-filter question recorded 2026-06-11).
+
+---
+
+## 2026-06-12 — Schema/migration: `dev` collision resolved — `notification_templates.id` stays INTEGER; five `coupon_codes` FK columns retyped
+
+**Repos:** all five (`admin-backend-api` migration + schema; `exhibitor-backend-api` / `background-worker-service` schema mirror; `external-api-service` / `pulse-broker-service` enum-only), branch `feature/SBE-671`
+**Scope:** database/schema only — **no Email & SMS endpoint changes**. Recorded here because it changes columns owned by the payment-flow/PPL module and the generated Prisma client types in every repo.
+
+### Why
+
+Rebasing `feature/SBE-671` onto `dev` (2026-06-12) collided with payment-flow/PPL work merged into admin `dev` (PRs #413 `fix/change-payment-flow`, #414 `feat/pplalgonew`): it re-declared `NotificationTemplate` with a pre-SBE-671 shape (BigInt id, `channel` VarChar(50)) and added five `coupon_codes` BIGINT FK columns referencing `notification_templates.id`. SBE-671's migration converts that id BIGINT→INTEGER; left unreconciled, the migration would fail (or leave a type mismatch) on any database carrying the coupon FKs. Full record: known-issues **#20**.
+
+### What changed — DB level (CORRECTIVE, applies at `migrate deploy`)
+
+| Object | Before (dev) | After |
+|---|---|---|
+| `notification_templates.id` | BIGINT (payment-flow shape) | INTEGER (unchanged SBE-671 decision) |
+| `coupon_codes.first_reminder_notification_template_id` | BIGINT, FK CASCADE | INTEGER, FK recreated — same name + CASCADE |
+| `coupon_codes.final_reminder_notification_template_id` | BIGINT, FK CASCADE | INTEGER, FK recreated — same name + CASCADE |
+| `coupon_codes.coupon_expire_date_email_template_id` | BIGINT, FK SET NULL | INTEGER, FK recreated — same name + SET NULL |
+| `coupon_codes.first_reminder_on_lead_threshold_email_template_id` | BIGINT, FK SET NULL | INTEGER, FK recreated — same name + SET NULL |
+| `coupon_codes.final_reminder_on_lead_threshold_email_template_id` | BIGINT, FK SET NULL | INTEGER, FK recreated — same name + SET NULL |
+
+Carried by migration `20260611120000_sbe671_email_sms_management` (section 2 extended: drop the five coupon FKs → ALTER types → recreate FKs). Values are small template ids, so the INTEGER narrowing cannot truncate. The `NotificationTemplate` model keeps dev's two coupon reminder relations (`firstReminderCouponCodes`/`finalReminderCouponCodes`).
+
+### What changed — code level
+
+- `admin-backend-api/src/admin/coupon-codes/coupon-codes.service.ts`: template-id existence check passed `ids.map(BigInt)`; now passes the plain numbers (Prisma `Int` accepts `number`). No other payment-flow code change was needed — their DTOs already use `number`.
+- Generated Prisma client types change in **all repos**: `NotificationTemplate.id` and the five coupon FK fields are `number` (were `bigint`).
+
+### Caller impact
+
+- **Email & SMS API consumers:** none — endpoint contracts already documented `id` as number (see the 2026-06-11 listing/detail entries).
+- **Payment-flow/PPL team:** regenerate the Prisma client after pulling; any code constructing `BigInt` values for these fields should switch to plain numbers (one admin call site fixed as above; their specs still build `BigInt` fixtures — passing, left to them). Their three expire-date/lead-threshold FK columns have no `@relation` in the Prisma schema (DB-level FKs only) — recorded factually, their call whether to add relations.
+- **Deploy note:** the first `migrate deploy` to an environment that has the coupon migrations applied will rewrite the five columns and FKs in place.
