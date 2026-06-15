@@ -441,3 +441,24 @@ Carried by migration `20260611120000_sbe671_email_sms_management` (section 2 ext
 ### Caller impact
 
 None structural. Frontends listing predefined templates or the trigger dropdown will see the new entry; it is outside the 18-template Email & SMS UI scope but behaves as any predefined row (two-tier edit rules apply).
+
+---
+
+## 2026-06-12 — Release-note audit: findings registered + one planned `PUT` change announced (no contract change today)
+
+**Repo:** all five (findings span the sending services); **no endpoint contract changed by this entry**.
+**Why:** a full release-note audit (stories vs implementation vs register) produced the QA digest `EMAIL_SMS_RELEASE_NOTES_KNOWN_ISSUES.md` (project root) and surfaced three code/data findings plus one design decision, recorded here so consuming teams see them in one place.
+
+### Findings — registered, no API change yet
+
+- **Live send path does not distinguish predefined from custom (register #21).** Every service's `sendFromTemplate` selects with `findFirst({ notification_type, channel: 'EMAIL', is_active: true })` — no `is_predefined` filter, no `orderBy` (verified in the admin and external-api mailers). An active **custom** template created on a dispatched trigger slug can nondeterministically shadow the predefined template. Proposed fix: scope the lookup to `is_predefined: true` + deterministic `orderBy` in all sending repos — planned to be implemented together with the scheduling logic (send-side only; no admin API contract change when it ships).
+- **`lead_assigned_preview` seeded copy vs trigger placeholder mismatch (register #22).** The seeded subject/body tokens are not in the trigger's `available_placeholders`, so any `PUT` touching `subject`/`body` on that row returns 400 until the data is corrected.
+- **`ppl_product_order_payment` body contains Handlebars block helpers (register #23).** Bodies are rendered by a literal token splice (Handlebars compiles only the branded layout shell — `external-api-service/src/common/services/mailer.service.ts`), so `{{#if}}`/`{{else}}` markers in that body would appear literally in delivered mail.
+
+### Planned — announced, NOT yet on any branch
+
+- **`PUT /admin/notification-templates/:id` — clear-to-default sentinel (register #19; direction agreed 2026-06-12, implementation deferred).** The additive `channel_config` merge is intentional; the pending send wiring will consume keys individually (absent key → system default). `cc_recipients`/`bcc_recipients` are already clearable via `[]`. For `from_name`/`reply_to` — currently impossible to unset (`null` and `""` both 400) — an agreed empty/sentinel input (proposed: `""`) will clear the stored key to `null`. A dated entry will follow when it ships.
+
+### Caller impact
+
+None today. Frontend heads-up for the planned sentinel: once it ships, `""` on `channel_config.from_name`/`reply_to` in a `PUT` will stop meaning "validation error" and start meaning "clear this override".
