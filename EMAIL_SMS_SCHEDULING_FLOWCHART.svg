@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1790" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .title{font-size:25px;font-weight:700;fill:#0f172a}
+      .sub{font-size:13.5px;fill:#475569}
+      .proc{font-size:13px;fill:#1e293b}
+      .procb{font-size:13px;font-weight:700;fill:#0f172a}
+      .dec{font-size:12.5px;font-weight:600;fill:#5c4400}
+      .se{font-size:14px;font-weight:700;fill:#ffffff}
+      .yn{font-size:12px;font-weight:700;fill:#334155}
+      .side{font-size:12px;fill:#1e293b}
+      .phase{font-size:12px;font-weight:700;fill:#64748b;letter-spacing:1px}
+      .band{font-size:13px;font-weight:700;fill:#94a3b8;letter-spacing:2px}
+      .small{font-size:11px;fill:#475569}
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1000" height="1790" fill="#f8fafc"/>
+  <text x="500" y="38" text-anchor="middle" class="title">Email &amp; SMS Scheduling — End-to-End Flow</text>
+  <text x="500" y="60" text-anchor="middle" class="sub">Admin config → SQS refresh → worker heartbeat: materialize → stop-conditions → dispatch (idempotent)</text>
+
+  <!-- bands -->
+  <rect x="12" y="80" width="976" height="372" rx="10" fill="#EEF3FA"/>
+  <rect x="12" y="464" width="976" height="1300" rx="10" fill="#EAF5EC"/>
+  <text x="30" y="270" class="band" transform="rotate(-90 30 270)">LAYER A · admin-backend-api</text>
+  <text x="30" y="1130" class="band" transform="rotate(-90 30 1130)">LAYER B · background-worker-service (heartbeat tick)</text>
+
+  <!-- ============ MAIN FLOW ARROWS ============ -->
+  <g stroke="#475569" stroke-width="2.2" fill="none">
+    <line x1="380" y1="133" x2="380" y2="151" marker-end="url(#a)"/>
+    <line x1="380" y1="248" x2="380" y2="271" marker-end="url(#a)"/>
+    <line x1="380" y1="368" x2="380" y2="381" marker-end="url(#a)"/>
+    <line x1="380" y1="438" x2="380" y2="471" marker-end="url(#a)"/>
+    <line x1="380" y1="528" x2="380" y2="551" marker-end="url(#a)"/>
+    <line x1="380" y1="648" x2="380" y2="681" marker-end="url(#a)"/>
+    <line x1="380" y1="738" x2="380" y2="784" marker-end="url(#a)"/>
+    <line x1="380" y1="916" x2="380" y2="961" marker-end="url(#a)"/>
+    <line x1="380" y1="1058" x2="380" y2="1101" marker-end="url(#a)"/>
+    <line x1="380" y1="1158" x2="380" y2="1191" marker-end="url(#a)"/>
+    <line x1="380" y1="1288" x2="380" y2="1321" marker-end="url(#a)"/>
+    <line x1="380" y1="1378" x2="380" y2="1401" marker-end="url(#a)"/>
+    <line x1="380" y1="1498" x2="380" y2="1521" marker-end="url(#a)"/>
+    <line x1="380" y1="1578" x2="380" y2="1611" marker-end="url(#a)"/>
+    <line x1="380" y1="1668" x2="380" y2="1696" marker-end="url(#a)"/>
+  </g>
+
+  <!-- ============ NODES ============ -->
+  <!-- N1 start -->
+  <rect x="230" y="87" width="300" height="46" rx="23" fill="#1F4E78"/>
+  <text x="380" y="115" text-anchor="middle" class="se">Admin saves template + schedule rule</text>
+
+  <!-- N2 decision -->
+  <polygon points="210,200 380,152 550,200 380,248" fill="#FFF7DB" stroke="#E0B000" stroke-width="1.5"/>
+  <text x="380" y="196" text-anchor="middle" class="dec">trigger.supports_scheduling</text>
+  <text x="380" y="212" text-anchor="middle" class="dec">= true ?</text>
+  <line x1="550" y1="200" x2="638" y2="200" stroke="#C0392B" stroke-width="2" marker-end="url(#a)"/>
+  <text x="595" y="192" text-anchor="middle" class="yn" fill="#C0392B">No</text>
+  <rect x="640" y="176" width="330" height="48" rx="8" fill="#FDE2E2" stroke="#C0392B"/>
+  <text x="656" y="205" class="side" fill="#7B241C">Reject — trigger is not a schedulable event</text>
+
+  <!-- N3 decision -->
+  <polygon points="210,320 380,272 550,320 380,368" fill="#FFF7DB" stroke="#E0B000" stroke-width="1.5"/>
+  <text x="380" y="316" text-anchor="middle" class="dec">template.is_schedulable</text>
+  <text x="380" y="332" text-anchor="middle" class="dec">= true ?</text>
+  <line x1="550" y1="320" x2="638" y2="320" stroke="#C0392B" stroke-width="2" marker-end="url(#a)"/>
+  <text x="595" y="312" text-anchor="middle" class="yn" fill="#C0392B">No</text>
+  <rect x="640" y="296" width="330" height="48" rx="8" fill="#FDE2E2" stroke="#C0392B"/>
+  <text x="656" y="325" class="side" fill="#7B241C">Reject — enable is_schedulable first</text>
+
+  <!-- N4 proc -->
+  <rect x="210" y="382" width="340" height="56" rx="8" fill="#ffffff" stroke="#475569"/>
+  <text x="380" y="406" text-anchor="middle" class="proc">Persist notification_schedules row</text>
+  <text x="380" y="424" text-anchor="middle" class="proc">+ publish SQS refresh</text>
+
+  <!-- N5 proc -->
+  <rect x="210" y="472" width="340" height="56" rx="8" fill="#ffffff" stroke="#2E7D32"/>
+  <text x="380" y="496" text-anchor="middle" class="procb">Worker heartbeat cron fires</text>
+  <text x="380" y="514" text-anchor="middle" class="proc">interval from ppl_settings (every N min)</text>
+
+  <!-- N6 decision -->
+  <polygon points="210,600 380,552 550,600 380,648" fill="#FFF7DB" stroke="#E0B000" stroke-width="1.5"/>
+  <text x="380" y="604" text-anchor="middle" class="dec">tick already running ?</text>
+  <line x1="550" y1="600" x2="638" y2="600" stroke="#607D8B" stroke-width="2" marker-end="url(#a)"/>
+  <text x="595" y="592" text-anchor="middle" class="yn">Yes</text>
+  <rect x="640" y="576" width="330" height="48" rx="8" fill="#ECEFF1" stroke="#607D8B"/>
+  <text x="656" y="605" class="side">Skip — re-entrancy guard</text>
+  <text x="380" y="668" text-anchor="middle" class="yn">No</text>
+
+  <!-- phase label -->
+  <text x="210" y="676" class="phase">▼ MATERIALIZE</text>
+
+  <!-- N7 proc -->
+  <rect x="210" y="682" width="340" height="56" rx="8" fill="#ffffff" stroke="#2E7D32"/>
+  <text x="380" y="706" text-anchor="middle" class="proc">Load enabled schedules WHERE</text>
+  <text x="380" y="724" text-anchor="middle" class="procb">template.is_schedulable = true</text>
+
+  <!-- N8 big proc -->
+  <rect x="210" y="785" width="340" height="131" rx="8" fill="#F1F8E9" stroke="#558B2F"/>
+  <text x="380" y="808" text-anchor="middle" class="procb">Resolve per schedule_kind</text>
+  <text x="226" y="830" class="proc">• ANCHOR_RELATIVE: anchor rows near</text>
+  <text x="226" y="847" class="small">   offset → fire_at (date-fns-tz, EVENT|IANA, DST)</text>
+  <text x="226" y="867" class="proc">• RECURRING: next due from recurrence</text>
+  <text x="226" y="887" class="proc">• FOLLOW_UP: captured trigger ts</text>
+  <text x="226" y="904" class="small">   + recipients_snapshot (no DRR needed)</text>
+
+  <!-- N9 decision -->
+  <polygon points="210,1010 380,962 550,1010 380,1058" fill="#FFF7DB" stroke="#E0B000" stroke-width="1.5"/>
+  <text x="380" y="1006" text-anchor="middle" class="dec">recipient = column</text>
+  <text x="380" y="1022" text-anchor="middle" class="dec">on anchor row ?</text>
+  <line x1="550" y1="1010" x2="638" y2="1010" stroke="#607D8B" stroke-width="2" marker-end="url(#a)"/>
+  <text x="595" y="1002" text-anchor="middle" class="yn">No</text>
+  <rect x="640" y="982" width="330" height="56" rx="8" fill="#ECEFF1" stroke="#607D8B"/>
+  <text x="656" y="1004" class="side">token recipient → DEFERRED (DRR #3)</text>
+  <text x="656" y="1023" class="side">null column → occurrence SKIPPED</text>
+  <text x="408" y="1082" text-anchor="middle" class="yn">Yes</text>
+
+  <!-- N10 proc -->
+  <rect x="210" y="1102" width="340" height="56" rx="8" fill="#ffffff" stroke="#2E7D32"/>
+  <text x="380" y="1126" text-anchor="middle" class="proc">Upsert PENDING occurrences</text>
+  <text x="380" y="1144" text-anchor="middle" class="procb">keyed by dedupe_key (idempotent)</text>
+
+  <!-- N11 decision -->
+  <polygon points="210,1240 380,1192 550,1240 380,1288" fill="#FFF7DB" stroke="#E0B000" stroke-width="1.5"/>
+  <text x="380" y="1236" text-anchor="middle" class="dec">stop-condition resolved?</text>
+  <text x="380" y="1252" text-anchor="middle" class="dec">(signed / answered / converted)</text>
+  <line x1="550" y1="1240" x2="638" y2="1240" stroke="#E65100" stroke-width="2" marker-end="url(#a)"/>
+  <text x="595" y="1232" text-anchor="middle" class="yn" fill="#E65100">Yes</text>
+  <rect x="640" y="1214" width="330" height="52" rx="8" fill="#FFF3E0" stroke="#E65100"/>
+  <text x="656" y="1236" class="side" fill="#9c4a00">Cancel remaining occurrences</text>
+  <text x="656" y="1255" class="small">for this schedule / anchor-instance</text>
+  <text x="408" y="1312" text-anchor="middle" class="yn">No</text>
+
+  <!-- phase label -->
+  <text x="210" y="1316" class="phase">▼ DISPATCH</text>
+
+  <!-- N12 proc -->
+  <rect x="210" y="1322" width="340" height="56" rx="8" fill="#ffffff" stroke="#2E7D32"/>
+  <text x="380" y="1346" text-anchor="middle" class="proc">Select occurrences</text>
+  <text x="380" y="1364" text-anchor="middle" class="procb">status = PENDING AND fire_at ≤ now()</text>
+
+  <!-- N13 decision -->
+  <polygon points="210,1450 380,1402 550,1450 380,1498" fill="#FFF7DB" stroke="#E0B000" stroke-width="1.5"/>
+  <text x="380" y="1454" text-anchor="middle" class="dec">channel = SMS ?</text>
+  <line x1="550" y1="1450" x2="638" y2="1450" stroke="#607D8B" stroke-width="2" marker-end="url(#a)"/>
+  <text x="595" y="1442" text-anchor="middle" class="yn">Yes</text>
+  <rect x="640" y="1426" width="330" height="48" rx="8" fill="#ECEFF1" stroke="#607D8B"/>
+  <text x="656" y="1455" class="side">SKIPPED — SMS provider not integrated</text>
+  <text x="408" y="1518" text-anchor="middle" class="yn">No (EMAIL)</text>
+
+  <!-- N14 proc -->
+  <rect x="210" y="1522" width="340" height="56" rx="8" fill="#ffffff" stroke="#2E7D32"/>
+  <text x="380" y="1546" text-anchor="middle" class="procb">MailerService.sendFromTemplate()</text>
+  <text x="380" y="1564" text-anchor="middle" class="proc">render + token escape → SendGrid</text>
+
+  <!-- N15 proc -->
+  <rect x="210" y="1612" width="340" height="56" rx="8" fill="#ffffff" stroke="#2E7D32"/>
+  <text x="380" y="1636" text-anchor="middle" class="proc">Write NotificationLog PENDING→SENT/FAILED</text>
+  <text x="380" y="1654" text-anchor="middle" class="proc">link occurrence, mark status</text>
+
+  <!-- N16 end -->
+  <rect x="215" y="1697" width="330" height="46" rx="23" fill="#1F4E78"/>
+  <text x="380" y="1719" text-anchor="middle" class="se">Done</text>
+  <text x="380" y="1736" text-anchor="middle" class="small" fill="#cbd5e1">re-run safe — dedupe_key blocks duplicates</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="640" y="1660" width="16" height="14" rx="2" fill="#FFF7DB" stroke="#E0B000"/>
+    <text x="662" y="1671" class="small">decision</text>
+    <rect x="730" y="1660" width="16" height="14" rx="2" fill="#FDE2E2" stroke="#C0392B"/>
+    <text x="752" y="1671" class="small">reject</text>
+    <rect x="810" y="1660" width="16" height="14" rx="2" fill="#ECEFF1" stroke="#607D8B"/>
+    <text x="832" y="1671" class="small">skip / defer</text>
+    <rect x="910" y="1660" width="16" height="14" rx="2" fill="#FFF3E0" stroke="#E65100"/>
+    <text x="932" y="1671" class="small">cancel</text>
+  </g>
+</svg>

@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1360 820" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#475569"/>
+    </marker>
+    <marker id="arrowG" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#2E7D32"/>
+    </marker>
+    <style>
+      .title{font-size:27px;font-weight:700;fill:#0f172a}
+      .sub{font-size:14px;fill:#475569}
+      .hdr{font-size:15px;font-weight:700;fill:#ffffff}
+      .card{font-size:12.5px;fill:#1e293b}
+      .cardb{font-size:12.5px;font-weight:700;fill:#1e293b}
+      .flbl{font-size:12px;font-weight:600;fill:#334155}
+      .note{font-size:11.5px;fill:#334155}
+      .tag{font-size:10.5px;font-weight:700;fill:#92600a}
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1360" height="820" fill="#f8fafc"/>
+  <text x="680" y="40" text-anchor="middle" class="title">Email &amp; SMS Dynamic Scheduling — Architecture</text>
+  <text x="680" y="62" text-anchor="middle" class="sub">3 layers · admin-backend-api owns config + migrations · background-worker-service executes · SMS &amp; DRR deferred</text>
+
+  <!-- ===================== SQS refresh top line ===================== -->
+  <line x1="220" y1="186" x2="1150" y2="186" stroke="#475569" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <text x="685" y="179" text-anchor="middle" class="flbl">SQS refresh — hot reload of live rules (no redeploy)</text>
+
+  <!-- ===================== SendGrid (external) ===================== -->
+  <rect x="1080" y="96" width="200" height="60" rx="10" fill="#FFE0B2" stroke="#E65100" stroke-width="1.5"/>
+  <text x="1180" y="122" text-anchor="middle" class="cardb">SendGrid</text>
+  <text x="1180" y="141" text-anchor="middle" class="note">external email provider</text>
+
+  <!-- ===================== ADMIN PANEL (Layer A) ===================== -->
+  <rect x="40" y="200" width="340" height="372" rx="12" fill="#D9E1F2" stroke="#1F4E78" stroke-width="1.5"/>
+  <rect x="40" y="200" width="340" height="40" rx="12" fill="#1F4E78"/>
+  <rect x="40" y="222" width="340" height="18" fill="#1F4E78"/>
+  <text x="210" y="226" text-anchor="middle" class="hdr">admin-backend-api — Layer A (Config)</text>
+
+  <g>
+    <rect x="58" y="256" width="304" height="40" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <text x="70" y="280" class="card">notification-template module (CRUD)</text>
+
+    <rect x="58" y="304" width="304" height="40" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <text x="70" y="328" class="card">ScheduleRuleDto[] + nested DTOs</text>
+
+    <rect x="58" y="352" width="304" height="40" rx="6" fill="#FFF7DB" stroke="#E0B000"/>
+    <text x="70" y="370" class="cardb">Gate: is_schedulable</text>
+    <text x="70" y="386" class="card">only if trigger.supports_scheduling</text>
+
+    <rect x="58" y="400" width="304" height="40" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <text x="70" y="424" class="card">Two-tier predefined matrix</text>
+
+    <rect x="58" y="448" width="304" height="40" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <text x="70" y="472" class="card">Audit snapshot (AdminAuditService)</text>
+
+    <rect x="58" y="496" width="304" height="40" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <text x="70" y="520" class="card">Publish SQS refresh on save</text>
+  </g>
+
+  <!-- ===================== POSTGRES PANEL ===================== -->
+  <rect x="500" y="200" width="360" height="372" rx="12" fill="#EDE7F6" stroke="#4A148C" stroke-width="1.5"/>
+  <rect x="500" y="200" width="360" height="40" rx="12" fill="#4A148C"/>
+  <rect x="500" y="222" width="360" height="18" fill="#4A148C"/>
+  <text x="680" y="226" text-anchor="middle" class="hdr">PostgreSQL — shared source of truth</text>
+
+  <g>
+    <rect x="518" y="252" width="324" height="34" rx="6" fill="#FFF7DB" stroke="#E0B000"/>
+    <text x="528" y="273" class="card">notification_templates <tspan class="cardb">+ is_schedulable</tspan></text>
+
+    <rect x="518" y="292" width="324" height="34" rx="6" fill="#FFF7DB" stroke="#E0B000"/>
+    <text x="528" y="313" class="card">trigger_events <tspan class="cardb">+ supports_scheduling</tspan></text>
+
+    <rect x="518" y="332" width="324" height="34" rx="6" fill="#E8F5E9" stroke="#2E7D32"/>
+    <text x="528" y="353" class="card">notification_schedules <tspan class="tag">NEW</tspan></text>
+
+    <rect x="518" y="372" width="324" height="34" rx="6" fill="#E8F5E9" stroke="#2E7D32"/>
+    <text x="528" y="393" class="card">notification_schedule_occurrences <tspan class="tag">NEW</tspan></text>
+
+    <rect x="518" y="412" width="324" height="34" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <text x="528" y="433" class="card">notification_logs</text>
+
+    <rect x="518" y="456" width="324" height="98" rx="6" fill="#F3E5F5" stroke="#7B1FA2" stroke-dasharray="4 3"/>
+    <text x="528" y="476" class="cardb">Anchor tables (existing):</text>
+    <text x="528" y="495" class="note">• PaymentTransaction.due_date  (NOT NULL, strongest)</text>
+    <text x="528" y="512" class="note">• Cart.expiration_date  (nullable)</text>
+    <text x="528" y="529" class="note">• Order.paid_in_full_at  (completion-set)</text>
+    <text x="528" y="546" class="note">• Shows.date  (date-only, weak)</text>
+  </g>
+
+  <!-- ===================== WORKER PANEL (Layer B) ===================== -->
+  <rect x="980" y="200" width="340" height="372" rx="12" fill="#E6F4EA" stroke="#2E7D32" stroke-width="1.5"/>
+  <rect x="980" y="200" width="340" height="40" rx="12" fill="#2E7D32"/>
+  <rect x="980" y="222" width="340" height="18" fill="#2E7D32"/>
+  <text x="1150" y="226" text-anchor="middle" class="hdr">background-worker-service — Layer B</text>
+
+  <g>
+    <rect x="998" y="256" width="304" height="34" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <text x="1010" y="277" class="cardb">schedule-dispatch module</text>
+
+    <rect x="998" y="296" width="304" height="34" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <text x="1010" y="317" class="card">Registrar → heartbeat cron (every N min)</text>
+
+    <rect x="998" y="336" width="304" height="34" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <text x="1010" y="357" class="card">Task → re-entrancy + lifecycle log</text>
+
+    <rect x="998" y="376" width="304" height="120" rx="6" fill="#F1F8E9" stroke="#558B2F"/>
+    <text x="1010" y="396" class="cardb">Service.runTick()</text>
+    <text x="1010" y="416" class="note">• Materialize: anchors → fire_at</text>
+    <text x="1010" y="433" class="note">  (date-fns-tz, EVENT|IANA, DST)</text>
+    <text x="1010" y="452" class="note">• Stop-condition eval → cancel</text>
+    <text x="1010" y="471" class="note">• Dispatch due (PENDING &amp; fire_at ≤ now)</text>
+    <text x="1010" y="490" class="note">• SMS → SKIPPED · token recip → DEFER</text>
+
+    <rect x="998" y="502" width="304" height="34" rx="6" fill="#ffffff" stroke="#94a3b8"/>
+    <text x="1010" y="523" class="card">MailerService.sendFromTemplate()</text>
+  </g>
+
+  <!-- ===================== FLOW ARROWS ===================== -->
+  <!-- Admin -> Postgres : writes -->
+  <line x1="382" y1="360" x2="498" y2="360" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="440" y="350" text-anchor="middle" class="flbl">writes</text>
+  <text x="440" y="376" text-anchor="middle" class="note">config + rules</text>
+
+  <!-- Postgres -> Worker : reads -->
+  <line x1="862" y1="320" x2="978" y2="320" stroke="#2E7D32" stroke-width="2.2" marker-end="url(#arrowG)"/>
+  <text x="920" y="310" text-anchor="middle" class="flbl">reads</text>
+  <text x="920" y="335" text-anchor="middle" class="note">rules + anchors</text>
+
+  <!-- Worker -> Postgres : writes occurrences/logs -->
+  <line x1="978" y1="420" x2="862" y2="420" stroke="#2E7D32" stroke-width="2.2" marker-end="url(#arrowG)"/>
+  <text x="920" y="437" text-anchor="middle" class="note">writes occurrences + logs</text>
+
+  <!-- Worker -> SendGrid -->
+  <line x1="1150" y1="198" x2="1170" y2="158" stroke="#475569" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="1095" y="180" text-anchor="end" class="note">send</text>
+
+  <!-- ===================== FOOTNOTE BOXES ===================== -->
+  <rect x="40" y="610" width="400" height="150" rx="10" fill="#FFF3E0" stroke="#E65100" stroke-width="1.2"/>
+  <text x="58" y="634" class="cardb" fill="#E65100">Layer C — bundled fix (Known-Issue #21)</text>
+  <text x="58" y="657" class="note">Add is_predefined + deterministic orderBy to the</text>
+  <text x="58" y="674" class="note">template lookup in all 4 mailers, so an active custom</text>
+  <text x="58" y="691" class="note">template can't shadow the predefined one on a live</text>
+  <text x="58" y="708" class="note">trigger. Scheduled sends are unaffected (dispatch a</text>
+  <text x="58" y="725" class="note">specific occurrence template id).</text>
+  <text x="58" y="748" class="note" font-style="italic">Ships together with the scheduling logic.</text>
+
+  <rect x="500" y="610" width="360" height="150" rx="10" fill="#EDE7F6" stroke="#4A148C" stroke-width="1.2"/>
+  <text x="518" y="634" class="cardb" fill="#4A148C">Schema mirroring</text>
+  <text x="518" y="657" class="note">admin-backend-api owns the migration</text>
+  <text x="518" y="674" class="note">(prisma/migrations + seed). The 4 sibling</text>
+  <text x="518" y="691" class="note">services — exhibitor, external-api,</text>
+  <text x="518" y="708" class="note">pulse-broker, worker — mirror the 2 new</text>
+  <text x="518" y="725" class="note">columns + 2 tables via prisma db push.</text>
+  <text x="518" y="748" class="note" font-style="italic">No raw-SQL-only constructs (db push drops them).</text>
+
+  <rect x="920" y="610" width="400" height="150" rx="10" fill="#ECEFF1" stroke="#455A64" stroke-width="1.2"/>
+  <text x="938" y="634" class="cardb" fill="#455A64">Deferred (forward-compatible)</text>
+  <text x="938" y="657" class="note">• SMS channel → occurrences materialize but</text>
+  <text x="938" y="674" class="note">  dispatch is SKIPPED (no provider integrated).</text>
+  <text x="938" y="691" class="note">• Token recipients ({salesperson}, speakers) →</text>
+  <text x="938" y="708" class="note">  DRR = Dynamic Recipient Resolution (item #3).</text>
+  <text x="938" y="725" class="note">• Column-recipient sends (Cart.client_email,</text>
+  <text x="938" y="742" class="note">  Order.billing_email) work now — no DRR needed.</text>
+
+  <!-- legend -->
+  <rect x="40" y="784" width="18" height="14" rx="3" fill="#FFF7DB" stroke="#E0B000"/>
+  <text x="64" y="795" class="note">new column on existing table</text>
+  <rect x="250" y="784" width="18" height="14" rx="3" fill="#E8F5E9" stroke="#2E7D32"/>
+  <text x="274" y="795" class="note">new table</text>
+  <rect x="370" y="784" width="18" height="14" rx="3" fill="#FFE0B2" stroke="#E65100"/>
+  <text x="394" y="795" class="note">external / out-of-scope</text>
+</svg>
