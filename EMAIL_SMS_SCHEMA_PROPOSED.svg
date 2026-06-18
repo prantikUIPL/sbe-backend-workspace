@@ -1,0 +1,238 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1320" font-family="Helvetica,Arial,sans-serif">
+  <style>
+    .title  { font-size: 22px; font-weight: 700; fill: #1B5E20; }
+    .sub    { font-size: 13px; fill: #455A64; }
+    .ehdr   { font-size: 14px; font-weight: 700; fill: #FFFFFF; }
+    .col    { font-size: 11px; fill: #212121; font-family: "SF Mono",Menlo,Consolas,monospace; }
+    .pk     { font-weight: 700; fill: #B71C1C; }
+    .fk     { fill: #1565C0; font-style: italic; }
+    .new    { fill: #1B5E20; font-weight: 700; }
+    .note   { font-size: 10.5px; fill: #607D8B; font-style: italic; }
+    .rel    { font-size: 11px; fill: #37474F; font-weight: 700; }
+    .reln   { font-size: 11px; fill: #1B5E20; font-weight: 700; }
+    .legt   { font-size: 12px; fill: #37474F; }
+    .grp    { font-size: 12px; font-weight: 700; fill: #6A1B9A; }
+  </style>
+
+  <text x="40" y="40" class="title">Email &amp; SMS Management — Proposed Schema (scheduling work)</text>
+  <text x="40" y="60" class="sub">Adds two schedulability flags + two dedicated tables + three enums. Green = NEW / changed. Existing notification core is unchanged in shape.</text>
+
+  <!-- ============ trigger_events (+ supports_scheduling) ============ -->
+  <g>
+    <rect x="40" y="100" width="300" height="178" rx="6" fill="#FFFFFF" stroke="#37474F" stroke-width="1.5"/>
+    <rect x="40" y="100" width="300" height="28" rx="6" fill="#37474F"/>
+    <rect x="40" y="114" width="300" height="14" fill="#37474F"/>
+    <text x="54" y="119" class="ehdr">trigger_events</text>
+    <text x="54" y="148" class="col"><tspan class="pk">id</tspan>  Int  PK</text>
+    <text x="54" y="166" class="col">slug  VarChar(150)  UNIQUE</text>
+    <text x="54" y="184" class="col">label  VarChar(255)</text>
+    <text x="54" y="202" class="col">available_placeholders  Json?</text>
+    <text x="54" y="220" class="col">is_custom  Boolean</text>
+    <text x="54" y="238" class="col"><tspan class="new">+ supports_scheduling  Boolean</tspan></text>
+    <text x="64" y="252" class="note">NEW · @default(false) · catalog gate (code-set)</text>
+    <text x="54" y="272" class="col">created_at / updated_at  Timestamptz</text>
+  </g>
+
+  <!-- ============ notification_templates (+ is_schedulable) ============ -->
+  <g>
+    <rect x="430" y="90" width="350" height="336" rx="6" fill="#FFFFFF" stroke="#1A237E" stroke-width="2"/>
+    <rect x="430" y="90" width="350" height="28" rx="6" fill="#1A237E"/>
+    <rect x="430" y="104" width="350" height="14" fill="#1A237E"/>
+    <text x="444" y="109" class="ehdr">notification_templates</text>
+    <text x="444" y="138" class="col"><tspan class="pk">id</tspan>  Int  PK</text>
+    <text x="444" y="156" class="col"><tspan class="fk">notification_type</tspan>  VarChar(150)  → trigger_events.slug</text>
+    <text x="444" y="174" class="col">template_name  ·  tag  ·  channel</text>
+    <text x="444" y="192" class="col">subject?  ·  body  ·  language</text>
+    <text x="444" y="210" class="col">channel_config  Json?</text>
+    <text x="454" y="224" class="note">{ from_name, reply_to, cc[], bcc[] } → dispatch</text>
+    <text x="444" y="242" class="col">is_predefined  Boolean</text>
+    <text x="444" y="260" class="col"><tspan class="new">+ is_schedulable  Boolean</tspan></text>
+    <text x="454" y="274" class="note">NEW · @default(false) · per-template marker</text>
+    <text x="444" y="292" class="col">schedule_config  Json?  (advisory hint)</text>
+    <text x="444" y="310" class="col">follow_up_config  Json?  (advisory hint)</text>
+    <text x="444" y="328" class="col">is_active  Boolean</text>
+    <text x="444" y="346" class="col">created_at / updated_at  Timestamptz</text>
+    <rect x="444" y="360" width="322" height="54" rx="4" fill="#E8F5E9" stroke="#2E7D32"/>
+    <text x="454" y="378" class="note" fill="#1B5E20">Integrity (§2.3, service-enforced):</text>
+    <text x="454" y="394" class="note" fill="#1B5E20">is_schedulable=true only if trigger.supports_scheduling=true;</text>
+    <text x="454" y="408" class="note" fill="#1B5E20">a schedule may attach only to an is_schedulable=true template.</text>
+  </g>
+
+  <!-- ============ notification_logs ============ -->
+  <g>
+    <rect x="1180" y="90" width="280" height="172" rx="6" fill="#FFFFFF" stroke="#37474F" stroke-width="1.5"/>
+    <rect x="1180" y="90" width="280" height="28" rx="6" fill="#37474F"/>
+    <rect x="1180" y="104" width="280" height="14" fill="#37474F"/>
+    <text x="1194" y="109" class="ehdr">notification_logs</text>
+    <text x="1194" y="138" class="col"><tspan class="pk">id</tspan>  BigInt  PK</text>
+    <text x="1194" y="156" class="col"><tspan class="fk">notification_template_id</tspan>  Int</text>
+    <text x="1194" y="174" class="col">email?  ·  status  ·  retry_count</text>
+    <text x="1194" y="192" class="col">provider / provider_message_id</text>
+    <text x="1194" y="210" class="col">subject? / body / error?</text>
+    <text x="1194" y="228" class="col">sent_at?  ·  created_at / updated_at</text>
+    <text x="1194" y="250" class="note">per-send delivery ledger (unchanged)</text>
+  </g>
+
+  <!-- ============ NEW enums ============ -->
+  <g>
+    <rect x="40" y="320" width="300" height="206" rx="6" fill="#E8F5E9" stroke="#2E7D32" stroke-width="1.5"/>
+    <text x="54" y="342" class="grp" fill="#1B5E20">enums  (NEW)</text>
+    <text x="54" y="366" class="col"><tspan class="new">NotificationScheduleKind</tspan></text>
+    <text x="64" y="382" class="note">{ ANCHOR_RELATIVE, RECURRING, FOLLOW_UP }</text>
+    <text x="54" y="404" class="col"><tspan class="new">NotificationStopCondition</tspan></text>
+    <text x="64" y="420" class="note">{ CONTRACT_SIGNED, QUESTION_ANSWERED,</text>
+    <text x="64" y="434" class="note">  CART_CONVERTED, NONE }  — only NONE live (SCH-4)</text>
+    <text x="54" y="456" class="col"><tspan class="new">OccurrenceStatus</tspan></text>
+    <text x="64" y="472" class="note">{ PENDING, SENDING, SENT, SKIPPED,</text>
+    <text x="64" y="486" class="note">  CANCELLED, FAILED }</text>
+    <text x="54" y="508" class="col">reused: NotificationChannel { EMAIL, SMS }</text>
+  </g>
+
+  <!-- ============ NEW notification_schedules ============ -->
+  <g>
+    <rect x="430" y="500" width="420" height="406" rx="6" fill="#FFFFFF" stroke="#2E7D32" stroke-width="2.5"/>
+    <rect x="430" y="500" width="420" height="28" rx="6" fill="#2E7D32"/>
+    <rect x="430" y="514" width="420" height="14" fill="#2E7D32"/>
+    <text x="444" y="519" class="ehdr">notification_schedules    (NEW · the send-rule)</text>
+    <text x="444" y="548" class="col"><tspan class="pk">id</tspan>  Int  PK</text>
+    <text x="444" y="566" class="col"><tspan class="fk">notification_template_id</tspan>  Int  → templates.id</text>
+    <text x="454" y="580" class="note">onDelete: Cascade · target must be is_schedulable</text>
+    <text x="444" y="598" class="col">schedule_kind  NotificationScheduleKind</text>
+    <text x="444" y="616" class="col">anchor_entity  enum?   anchor_field  String?</text>
+    <text x="454" y="630" class="note">ANCHOR_RELATIVE: CART/PAYMENT_TRANSACTION/ORDER/SHOW</text>
+    <text x="444" y="648" class="col">recipient_source  String?</text>
+    <text x="444" y="666" class="col">replacements_map  Json?</text>
+    <text x="454" y="680" class="note">restricted: bare column · FULL_NAME() · DATE_FMT()</text>
+    <text x="444" y="698" class="col">offsets  Json   [{ value, unit, direction }]</text>
+    <text x="444" y="716" class="col">recurrence  Json?   { daysOfWeek[], time | intervalDays }</text>
+    <text x="444" y="734" class="col">send_time  String?   timezone  String (EVENT|IANA)</text>
+    <text x="444" y="752" class="col">follow_up  Json?   { delayDays, repeatCount, frequency? }</text>
+    <text x="444" y="770" class="col">stop_condition  NotificationStopCondition?</text>
+    <text x="444" y="788" class="col">end_window_at  Timestamptz?</text>
+    <text x="444" y="806" class="col">is_enabled  Boolean  @default(true)</text>
+    <text x="444" y="824" class="col">created_at / updated_at  Timestamptz</text>
+    <text x="454" y="838" class="note">updated_at = re-materialization watermark</text>
+    <rect x="444" y="852" width="392" height="44" rx="4" fill="#F1F8E9" stroke="#7CB342"/>
+    <text x="454" y="870" class="note" fill="#33691E">Per-kind field matrix (§2.1.1, @ValidateIf): every RECURRING /</text>
+    <text x="454" y="884" class="note" fill="#33691E">FOLLOW_UP series must carry ≥1 bound (end_window / repeatCount / stop).</text>
+  </g>
+
+  <!-- ============ NEW notification_schedule_occurrences ============ -->
+  <g>
+    <rect x="930" y="470" width="430" height="442" rx="6" fill="#FFFFFF" stroke="#2E7D32" stroke-width="2.5"/>
+    <rect x="930" y="470" width="430" height="28" rx="6" fill="#2E7D32"/>
+    <rect x="930" y="484" width="430" height="14" fill="#2E7D32"/>
+    <text x="944" y="489" class="ehdr">notification_schedule_occurrences    (NEW · materialized send)</text>
+    <text x="944" y="518" class="col"><tspan class="pk">id</tspan>  BigInt  PK</text>
+    <text x="954" y="532" class="note">high-volume → BigInt (mirrors NotificationLog)</text>
+    <text x="944" y="550" class="col"><tspan class="fk">schedule_id</tspan>  Int  → notification_schedules.id</text>
+    <text x="954" y="564" class="note">onDelete: Cascade</text>
+    <text x="944" y="582" class="col">anchor_instance_ref  String?   (e.g. cart:123)</text>
+    <text x="944" y="600" class="col">offset_key  String?   sequence_index  Int?</text>
+    <text x="954" y="614" class="note">stable dedupe parts (never fire_at)</text>
+    <text x="944" y="632" class="col">channel  NotificationChannel</text>
+    <text x="954" y="646" class="note">denormalized → SMS rows SKIPPED at dispatch</text>
+    <text x="944" y="664" class="col">recipients_snapshot  Json?</text>
+    <text x="954" y="678" class="note">{ to[], cc[], bcc[], replacements, from_name?, reply_to? }</text>
+    <text x="944" y="696" class="col">fire_at  Timestamptz   (recompute PENDING, freeze SENT)</text>
+    <text x="944" y="714" class="col">series_anchor_at  Timestamptz?</text>
+    <text x="944" y="732" class="col">anchor_value_at_materialize  Timestamptz?</text>
+    <text x="944" y="750" class="col">status  OccurrenceStatus  @default(PENDING)</text>
+    <text x="944" y="768" class="col">attempt_count  Int   next_attempt_at  Timestamptz?</text>
+    <text x="944" y="786" class="col">claimed_at  Timestamptz?   (SENDING-reaper)</text>
+    <text x="944" y="804" class="col">dedupe_key  String  UNIQUE   (idempotency)</text>
+    <text x="944" y="822" class="col"><tspan class="fk">notification_log_id</tspan>  BigInt?  → notification_logs.id</text>
+    <text x="944" y="840" class="col">created_at / updated_at  Timestamptz</text>
+    <rect x="944" y="854" width="402" height="44" rx="4" fill="#F1F8E9" stroke="#7CB342"/>
+    <text x="954" y="872" class="note" fill="#33691E">Indexes: (status, fire_at) due-poller · (status, next_attempt_at)</text>
+    <text x="954" y="886" class="note" fill="#33691E">retry-scan · (schedule_id). Atomic claim PENDING→SENDING.</text>
+  </g>
+
+  <!-- ============ domain anchor tables ============ -->
+  <text x="40" y="980" class="grp">Existing domain records — referenced LOGICALLY by anchor_entity/anchor_field (resolved in code; NO database FK)</text>
+  <g>
+    <rect x="40" y="996" width="300" height="96" rx="6" fill="#ECEFF1" stroke="#78909C" stroke-width="1.5"/>
+    <rect x="40" y="996" width="300" height="24" rx="6" fill="#78909C"/>
+    <rect x="40" y="1008" width="300" height="12" fill="#78909C"/>
+    <text x="54" y="1013" class="ehdr">Cart</text>
+    <text x="54" y="1040" class="col">expiration_date  Timestamptz?  (nullable)</text>
+    <text x="54" y="1058" class="col">client_email  VarChar(255)?</text>
+    <text x="54" y="1080" class="note">ANCHOR_RELATIVE (forward) · must mirror to worker</text>
+  </g>
+  <g>
+    <rect x="360" y="996" width="300" height="96" rx="6" fill="#ECEFF1" stroke="#78909C" stroke-width="1.5"/>
+    <rect x="360" y="996" width="300" height="24" rx="6" fill="#78909C"/>
+    <rect x="360" y="1008" width="300" height="12" fill="#78909C"/>
+    <text x="374" y="1013" class="ehdr">PaymentTransaction</text>
+    <text x="374" y="1040" class="col">due_date  Timestamptz  NOT NULL</text>
+    <text x="374" y="1058" class="col">→ order.billing_email (1 hop)</text>
+    <text x="374" y="1080" class="note">ANCHOR_RELATIVE (forward) · strongest anchor</text>
+  </g>
+  <g>
+    <rect x="680" y="996" width="300" height="96" rx="6" fill="#ECEFF1" stroke="#78909C" stroke-width="1.5"/>
+    <rect x="680" y="996" width="300" height="24" rx="6" fill="#78909C"/>
+    <rect x="680" y="1008" width="300" height="12" fill="#78909C"/>
+    <text x="694" y="1013" class="ehdr">Order</text>
+    <text x="694" y="1040" class="col">paid_in_full_at  Timestamptz?</text>
+    <text x="694" y="1058" class="col">billing_email  VarChar(255)?</text>
+    <text x="694" y="1080" class="note">FOLLOW_UP-only (completion-set; no before-offsets)</text>
+  </g>
+  <g>
+    <rect x="1000" y="996" width="300" height="96" rx="6" fill="#ECEFF1" stroke="#78909C" stroke-width="1.5"/>
+    <rect x="1000" y="996" width="300" height="24" rx="6" fill="#78909C"/>
+    <rect x="1000" y="1008" width="300" height="12" fill="#78909C"/>
+    <text x="1014" y="1013" class="ehdr">Shows</text>
+    <text x="1014" y="1040" class="col">date  Date?  ·  timezone  VarChar(50)?</text>
+    <text x="1014" y="1058" class="col">(date-only, weak)</text>
+    <text x="1014" y="1080" class="note">deferred anchor · model is "Shows"</text>
+  </g>
+
+  <!-- ============ relationships ============ -->
+  <!-- trigger_events 1 -> N notification_templates -->
+  <line x1="340" y1="156" x2="430" y2="156" stroke="#1A237E" stroke-width="2"/>
+  <text x="348" y="150" class="rel">1</text>
+  <text x="414" y="150" class="rel">N</text>
+
+  <!-- notification_templates 1 -> N notification_logs -->
+  <line x1="780" y1="150" x2="1180" y2="150" stroke="#1A237E" stroke-width="2"/>
+  <text x="788" y="144" class="rel">1</text>
+  <text x="1164" y="144" class="rel">N</text>
+
+  <!-- notification_templates 1 -> N notification_schedules (NEW) -->
+  <line x1="605" y1="426" x2="605" y2="500" stroke="#2E7D32" stroke-width="2.5"/>
+  <text x="612" y="446" class="reln">1</text>
+  <text x="612" y="494" class="reln">N</text>
+  <text x="616" y="470" class="note" fill="#1B5E20">gated by is_schedulable</text>
+
+  <!-- notification_schedules 1 -> N occurrences (NEW) -->
+  <line x1="850" y1="690" x2="930" y2="690" stroke="#2E7D32" stroke-width="2.5"/>
+  <text x="856" y="684" class="reln">1</text>
+  <text x="912" y="684" class="reln">N</text>
+
+  <!-- occurrences N -> 1 notification_logs (NEW, nullable) -->
+  <path d="M1300 498 C 1360 360, 1380 300, 1340 262" fill="none" stroke="#2E7D32" stroke-width="2" stroke-dasharray="2,0"/>
+  <text x="1352" y="320" class="reln">N→1</text>
+  <text x="1330" y="338" class="note" fill="#1B5E20">links actual send (nullable)</text>
+
+  <!-- schedules ..> domain anchors (logical, dashed) -->
+  <line x1="500" y1="906" x2="300" y2="996" stroke="#78909C" stroke-width="1.6" stroke-dasharray="6,4"/>
+  <line x1="560" y1="906" x2="540" y2="996" stroke="#78909C" stroke-width="1.6" stroke-dasharray="6,4"/>
+  <line x1="640" y1="906" x2="820" y2="996" stroke="#78909C" stroke-width="1.6" stroke-dasharray="6,4"/>
+  <line x1="700" y1="906" x2="1120" y2="996" stroke="#78909C" stroke-width="1.6" stroke-dasharray="6,4"/>
+  <text x="360" y="950" class="note" fill="#607D8B">logical anchor reference (no FK) — resolved by the worker materializer</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="40" y="1120" width="1320" height="156" rx="6" fill="#FAFAFA" stroke="#CFD8DC"/>
+    <text x="56" y="1142" class="grp">Legend &amp; what changed</text>
+    <text x="56" y="1166" class="col"><tspan class="pk">bold red</tspan> = PK</text>
+    <text x="220" y="1166" class="col"><tspan class="fk">blue italic</tspan> = FK</text>
+    <text x="420" y="1166" class="col"><tspan class="new">green</tspan> = NEW / changed</text>
+    <text x="680" y="1166" class="col">solid line = real FK · dashed grey = logical reference (no FK)</text>
+    <text x="56" y="1190" class="legt">• Two new columns: notification_templates.is_schedulable (per-template marker) + trigger_events.supports_scheduling (catalog gate). Both Boolean @default(false); backfill leaves all 18 seeded rows false.</text>
+    <text x="56" y="1210" class="legt">• Two new tables: notification_schedules (one row per send-rule, authoritative) and notification_schedule_occurrences (one materialized, idempotent, auditable row per due send).</text>
+    <text x="56" y="1230" class="legt">• Three new enums; NotificationChannel reused. Integrity rules enforced in the service layer (not DB CHECK/partial index) so sibling-service `db push` stays clean.</text>
+    <text x="56" y="1250" class="legt">• anchor_entity/anchor_field point at Cart/PaymentTransaction/Order/Shows logically — the worker resolves them in code; no schema FK is added to domain tables. Existing schedule_config/follow_up_config JSON stays advisory.</text>
+    <text x="56" y="1270" class="legt">• Out of scope (deferred): SMS dispatch (occurrences materialize, then SKIPPED) and Dynamic Recipient Resolution / token recipients.</text>
+  </g>
+</svg>

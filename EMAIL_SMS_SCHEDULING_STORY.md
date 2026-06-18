@@ -1,11 +1,11 @@
 # Email & SMS Scheduling — Refined User Story (Dynamic Scheduling)
 
 **Module:** Email & SMS Management → Scheduling
-**Supersedes:** the Scheduling stories `76.6` (Predefined) and `77.8` (Custom) as written in `Email & SMS Management V2.xlsx` (file rows 7 and 20). Those remain on disk as the historical baseline.
-**Date:** 2026-06-16 · **Revised:** 2026-06-18 — light sync to the implementation plan: added the schedulability-gate criteria (AC-20/AC-21), a recipient-feasibility caveat in §4/§6, and the companion-guide + scheduling-known-issues references. The scheduling *model* (three kinds, timezone, stop-conditions) is unchanged.
+**Supersedes:** the Scheduling stories numbered `76.6` (Predefined) / `77.8` (Custom) in the Updated Epic, carried into `Email & SMS Management V2.xlsx` at file rows 7 and 20 (un-numbered there). Those remain on disk as the historical baseline.
+**Date:** 2026-06-16 · **Revised:** 2026-06-18 — sync to the implementation plan, the client list, the integration guide, and the SCH register: corrected the anchor set to real model names + nullability/strength (`Shows`, not `Show`), made `frequency` optional for `FOLLOW_UP`, qualified stop-condition maturity (only `NONE` live today), added the two deferred recurring-annual Internal rows, sharpened the SMS / token deferral to materialize-then-skip altitude, and refreshed the secondary-source / provenance labels. The scheduling *model* (three kinds, timezone, stop-conditions) is unchanged.
 **Audience:** Product / BA / Sprint planning
 **Primary source material:** `ONLY_Auto_Email_Notification_Triggers.xlsx` — the client's actual email/SMS template list (the authoritative statement of *how* the client expects scheduling to behave).
-**Secondary sources:** `Email & SMS Management V2.xlsx` (story text), `EMAIL_SMS_STORY_REVISIONS_V2.md` (two-epic model), `EMAIL_SMS_KNOWN_ISSUES.md` (#1 scheduling deferral, #2 SMS provider, #3 dynamic recipients), `EMAIL_SMS_SCHEDULING_KNOWN_ISSUES.md` (SCH-1 — scheduling-specific register).
+**Secondary sources:** `Email & SMS Management V2.xlsx` (story text), `EMAIL_SMS_STORY_REVISIONS_V2.md` (two-epic model), `EMAIL_SMS_KNOWN_ISSUES.md` (#1 scheduling deferral, #2 SMS provider, #3 dynamic recipients), `EMAIL_SMS_SCHEDULING_KNOWN_ISSUES.md` (SCH-1..SCH-6 — scheduling-specific register).
 **Companion documents:** `EMAIL_SMS_SCHEDULING_IMPLEMENTATION_PLAN.md` (the build plan) and `EMAIL_SMS_TEMPLATE_INTEGRATION_GUIDE.md` (the per-field value reference a dev uses to register a non-seeded template + its schedule).
 
 > **Filename note:** the source workbook is `ONLY_Auto_Email_Notification_Triggers.xlsx`. All cell references below are to its `Auto Emails` sheet unless stated otherwise.
@@ -14,7 +14,7 @@
 
 ## 1. Why this refinement exists
 
-The existing scheduling stories (`76.6` / `77.8`) describe **one** capability only:
+The existing scheduling stories (Updated-Epic `76.6` / `77.8`, carried into V2) describe **one** capability only:
 
 > *"As an Admin, I want to configure follow-up email schedules … so that follow-up emails are sent automatically at the defined frequency and number of days after the trigger event."*
 
@@ -50,7 +50,7 @@ A template may have **zero or more schedule rules** — but only if the template
 ### Kind 1 — `ANCHOR_RELATIVE` (proximity to a date)
 Sends relative to a **date that lives on a domain record** (the "anchor").
 
-- **Anchor** — which record + which date field (e.g. *Show.date*, *Cart.expiration_date*, *Order.paid_in_full_at*, *PaymentTransaction.due_date*, an admin-entered *deadline date*).
+- **Anchor** — which record + which date field (e.g. *PaymentTransaction.due_date* (NOT NULL, strongest), *Cart.expiration_date* (nullable), *Order.paid_in_full_at* (nullable, completion-set — set only *after* the event it marks, so it is **FOLLOW_UP-like**: only `after` offsets make sense and forward `before` offsets are rejected; see plan §4.7), *Shows.date* (date-only, weak — model is `Shows`, not `Show`), or an admin-entered *deadline date*).
 - **Offsets** — one **or many** offsets, each `{ value, unit (days|hours), direction (before|after) }`. Multi-offset is first-class: *"30 / 7 / 1 days before"* is **one rule with three offsets**, not three rules.
 - **Send time-of-day** — e.g. `10:00`, `08:00`, `09:00`.
 - **Timezone** — `EVENT` (resolve to the anchor record's timezone, e.g. the show's) **or** an explicit IANA zone of the admin's choosing (NOTE 47). DST-correct.
@@ -73,7 +73,7 @@ Covers: unanswered-product-question reminders (*every Mon & Thu at 11AM until an
 This is the shape the **original story** described — retained and made precise.
 
 - **Delay** — N days (≥ 0) after the trigger event fires.
-- **Frequency / repeat** — how often, and how many follow-ups (each follow-up has its own offset; a series of offsets is allowed).
+- **Frequency / repeat** *(frequency optional)* — repeat count (number of follow-ups) is required; frequency is optional and defaults to repeating every `delayDays`. A series of offsets is allowed.
 - **Send time-of-day** + **Timezone** — as above.
 - **Stop-condition** *(optional)* — e.g. *until the contract is signed*; *until the cart converts*.
 - **Enabled** — on/off.
@@ -102,7 +102,7 @@ Covers: contract reminder (*if unsigned after a defined delay*), and any future 
 ### 3.4 Recurring + stop-conditions
 - **AC-10** A `RECURRING` rule sends on its cadence (e.g. Mon & Thu at 11:00 in the selected timezone) until its stop-condition resolves or its end-window passes.
 - **AC-11** A `FOLLOW_UP` or `RECURRING` rule with a stop-condition **cancels its remaining occurrences** as soon as the bound domain state resolves (e.g. contract signed, question answered, cart converted). No further sends fire after resolution.
-- **AC-12** Supported stop-conditions are an enumerated, code-controlled set (admins **select** a stop-condition, they do not author arbitrary logic).
+- **AC-12** Supported stop-conditions are an enumerated, code-controlled set (admins **select** a stop-condition, they do not author arbitrary logic). The enumerated stop-conditions are delivered incrementally as their worker resolvers land — only `NONE` is guaranteed live today; `CONTRACT_SIGNED` / `QUESTION_ANSWERED` / `CART_CONVERTED` are resolver-pending and must be bounded by a `repeatCount` or end-window until their resolver ships (cross-ref `EMAIL_SMS_SCHEDULING_KNOWN_ISSUES.md` SCH-4).
 
 ### 3.5 Predefined vs custom (two-tier model)
 - **AC-13** Predefined-template schedules are editable within the **two-tier edit matrix**; **recipients (TO/FROM/sender_id) remain system-controlled and read-only** (consistent with `EMAIL_SMS_STORY_REVISIONS_V2.md` and Known-Issue #3).
@@ -110,22 +110,22 @@ Covers: contract reminder (*if unsigned after a defined delay*), and any future 
 
 ### 3.6 Channel (SMS)
 - **AC-15** SMS templates may **store** a schedule configuration now (the client list includes scheduled SMS — workshop confirmation −24h, product-question SMS).
-- **AC-16** SMS **execution remains gated** until an SMS provider is integrated (Known-Issue #2). Email schedules execute; SMS schedules are configured-and-stored but not dispatched until the provider exists. This is a **send-time gate only — zero additional schema or story change** to turn on later.
+- **AC-16** SMS **execution remains gated** until an SMS provider is integrated (Known-Issue #2). Email schedules execute; SMS schedules are configured, stored, and **materialized into occurrences**, but SKIPPED at dispatch (no send attempted) until the provider exists. This is a **send-time gate only — zero additional schema or story change** to turn on later.
 
 ### 3.7 Validation & audit
 - **AC-17** Access control: scheduling is editable only by Admin users with the appropriate permission (mirror the existing notification-template permission guard).
-- **AC-18** Frequency is required when a `FOLLOW_UP`/`RECURRING` rule is enabled; offsets are required for `ANCHOR_RELATIVE`.
+- **AC-18** For `FOLLOW_UP`, delay (days ≥ 0) and repeat count are required; `frequency` is optional (when omitted the series re-fires every `delayDays`). For `RECURRING`, a recurrence cadence is required. For `ANCHOR_RELATIVE`, at least one offset is required.
 - **AC-19** Every schedule create/modify/remove is written to `admin_audit_logs` with admin identity, template/rule identifier, previous and new values, and timestamp; audit entries are permanent and non-editable. (Carried from V2 "Audit".)
 
 ### 3.8 Schedulability gating (NEW — aligns the story with the build)
 - **AC-20** A schedule rule may be attached **only** to a template explicitly **marked schedulable**, and a template may be marked schedulable **only** when its trigger event is marked schedulable in the **code-controlled trigger catalog** (a per-trigger ceiling). The Template Edit screen exposes the "add schedule" affordance only for such templates; non-schedulable / transactional templates (password reset, receipts, instant confirmations) can never carry a schedule. **None of the currently-seeded predefined templates are schedulable at launch** — they are all transactional/event-driven — so the first schedulable templates are newly-authored ones (per the integration guide).
-- **AC-21** A scheduled email **dispatches** in this build only when its recipients are resolvable **without** dynamic token resolution — i.e. the recipient is a fixed/known address or a **column on the anchor record** (e.g. the cart or order owner's email). Sends whose recipients are tokens that require resolution (`{salesperson}`, `{all speaker email addresses}`) are **configured-and-stored but not dispatched** until DRR (Known-Issue #3) lands — the same send-time-gate pattern as SMS (AC-16), with zero additional schema or story change to turn on later.
+- **AC-21** A scheduled email **dispatches** in this build only when its recipients are resolvable **without** dynamic token resolution — i.e. the recipient is a fixed/known address or a **column on the anchor record** (e.g. the cart or order owner's email). Sends whose recipients are tokens that require resolution (`{salesperson}`, `{all speaker email addresses}`) are **configured-and-stored but not dispatched** until DRR (Known-Issue #3) lands — a deferral gate analogous to the SMS one (AC-16): SMS occurrences skip at dispatch, token-recipient occurrences skip at materialize; both turn on with zero additional schema or story change.
 
 ---
 
 ## 4. Source-mapping table (client list → model)
 
-Every **time-based** row in the client list, mapped to a schedule kind, an anchor, and its offsets/time/timezone. Rows whose anchor or template is **not yet built** are marked **[dep]** (dependency — see §6); they validate the model but are out of this effort's build scope.
+Every **time-based** row in the client list **whose anchor exists or is in build scope**, mapped to a schedule kind, an anchor, and its offsets/time/timezone. The annual Employee-Birthday / Work-Anniversary recurring intents are listed below but deferred — no employee birthdate/hire-date anchor is modelled today. Rows whose anchor or template is **not yet built** are marked **[dep]** (dependency — see §6); they validate the model but are out of this effort's build scope.
 
 | Client template (list row) | Kind | Anchor | Offsets | Time | Timezone | Channel | Notes |
 |---|---|---|---|---|---|---|---|
@@ -143,6 +143,8 @@ Every **time-based** row in the client list, mapped to a schedule kind, an ancho
 | Store — Cart Expiration Reminder | `ANCHOR_RELATIVE` | `Cart.expiration_date` ✅ | before expiry | (chosen) | (chosen) | Email | anchor exists |
 | Store — Payment Due | `ANCHOR_RELATIVE` | `PaymentTransaction.due_date` ✅ | on/around due | (chosen) | (chosen) | Email | anchor exists |
 | PPL — deadline reminders | `ANCHOR_RELATIVE` | Booth-build deadline date **[dep]** | per deadline | (chosen) | (chosen) | Email | "approached separately" per list |
+| Internal — Employee Birthday | `RECURRING` | — (employee birthdate field) **[dep]** | annual | (chosen) | (chosen) | Email | **[dep]** no birthdate anchor modelled today |
+| Internal — Employee Work Anniversary | `RECURRING` | — (employee hire-date field) **[dep]** | annual | (chosen) | (chosen) | Email | **[dep]** no hire-date anchor modelled today |
 
 ✅ = anchor already exists in the schema today (in build scope). **[dep]** = anchor/template not yet built (out of scope here; see §6).
 
@@ -159,7 +161,7 @@ Scheduling plugs into the **already-built** notification-template CRUD (Listing 
 ## 6. Out of scope / dependencies (record, don't own)
 
 - **Unbuilt client templates + their anchors** — the vendor/venue/GSC/electric logistics emails, the event-alert / event-photos internal emails, and the workshop confirm/reminder product emails are **not among the currently-built predefined triggers**, and their primary anchor (the **event/show date + timezone**, the **workshop scheduled time**) is not yet wired as a schedulable anchor. These are flagged as dependencies; the build effort targets the anchors that exist today (`Cart.expiration_date`, `PaymentTransaction.due_date`, `Order.paid_in_full_at`, and the show date/timezone **where already modelled**). Bringing the full client catalog in is a separate, larger effort.
-- **SMS provider** (Known-Issue #2) — scheduled SMS is modelled and stored now; dispatch is gated until a provider is integrated.
+- **SMS provider** (Known-Issue #2) — scheduled SMS is modelled and stored now; occurrences materialize but dispatch is SKIPPED until a provider is integrated.
 - **Dynamic recipient resolution** (Known-Issue #3) — resolving tokens like `{salesperson}`, `{all speaker email addresses}` at send time is a separate deferred story. Scheduled sends whose recipients are **fixed or a column on the anchor record** (cart/order owner email) do **not** need it and dispatch now; only **token-recipient** sends are gated on DRR (per AC-21).
 - **"Other relevant system emails" source list** (Known-Issue #4) — no observed source endpoint; owner TBD.
 

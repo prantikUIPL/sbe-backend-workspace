@@ -106,11 +106,12 @@
 
     <rect x="998" y="376" width="304" height="120" rx="6" fill="#F1F8E9" stroke="#558B2F"/>
     <text x="1010" y="396" class="cardb">Service.runTick()</text>
-    <text x="1010" y="416" class="note">• Materialize: anchors → fire_at</text>
-    <text x="1010" y="433" class="note">  (date-fns-tz, EVENT|IANA, DST)</text>
-    <text x="1010" y="452" class="note">• Stop-condition eval → cancel</text>
-    <text x="1010" y="471" class="note">• Dispatch due (PENDING &amp; fire_at ≤ now)</text>
-    <text x="1010" y="490" class="note">• SMS → SKIPPED · token recip → DEFER</text>
+    <text x="1010" y="414" class="note">• Materialize: anchors → fire_at (date-fns-tz,</text>
+    <text x="1010" y="430" class="note">  EVENT|IANA, DST) — SMS materializes too</text>
+    <text x="1010" y="446" class="note">  (-24h workshop SMS, Mon/Thu product SMS)</text>
+    <text x="1010" y="462" class="note">• Stop-condition eval → cancel</text>
+    <text x="1010" y="478" class="note">• Dispatch due (PENDING &amp; fire_at ≤ now);</text>
+    <text x="1010" y="494" class="note">  SMS → SKIPPED · token recip → DEFER</text>
 
     <rect x="998" y="502" width="304" height="34" rx="6" fill="#ffffff" stroke="#94a3b8"/>
     <text x="1010" y="523" class="card">MailerService.sendFromTemplate()</text>

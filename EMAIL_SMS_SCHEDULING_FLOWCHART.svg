@@ -98,13 +98,15 @@
   <text x="380" y="724" text-anchor="middle" class="procb">template.is_schedulable = true</text>
 
   <!-- N8 big proc -->
-  <rect x="210" y="785" width="340" height="131" rx="8" fill="#F1F8E9" stroke="#558B2F"/>
+  <rect x="210" y="785" width="340" height="152" rx="8" fill="#F1F8E9" stroke="#558B2F"/>
   <text x="380" y="808" text-anchor="middle" class="procb">Resolve per schedule_kind</text>
   <text x="226" y="830" class="proc">• ANCHOR_RELATIVE: anchor rows near</text>
   <text x="226" y="847" class="small">   offset → fire_at (date-fns-tz, EVENT|IANA, DST)</text>
   <text x="226" y="867" class="proc">• RECURRING: next due from recurrence</text>
   <text x="226" y="887" class="proc">• FOLLOW_UP: captured trigger ts</text>
-  <text x="226" y="904" class="small">   + recipients_snapshot (no DRR needed)</text>
+  <text x="226" y="901" class="small">   + recipients_snapshot (no DRR needed)</text>
+  <text x="226" y="914" class="small">   fire_at @ send_time in rule tz (DST, §4.3)</text>
+  <text x="226" y="930" class="small" fill="#7B3F00">SMS occurrences materialize too — SKIPPED only at dispatch</text>
 
   <!-- N9 decision -->
   <polygon points="210,1010 380,962 550,1010 380,1058" fill="#FFF7DB" stroke="#E0B000" stroke-width="1.5"/>
@@ -128,9 +130,10 @@
   <text x="380" y="1252" text-anchor="middle" class="dec">(signed / answered / converted)</text>
   <line x1="550" y1="1240" x2="638" y2="1240" stroke="#E65100" stroke-width="2" marker-end="url(#a)"/>
   <text x="595" y="1232" text-anchor="middle" class="yn" fill="#E65100">Yes</text>
-  <rect x="640" y="1214" width="330" height="52" rx="8" fill="#FFF3E0" stroke="#E65100"/>
-  <text x="656" y="1236" class="side" fill="#9c4a00">Cancel remaining occurrences</text>
-  <text x="656" y="1255" class="small">for this schedule / anchor-instance</text>
+  <rect x="640" y="1208" width="330" height="68" rx="8" fill="#FFF3E0" stroke="#E65100"/>
+  <text x="656" y="1228" class="side" fill="#9c4a00">Cancel remaining occurrences</text>
+  <text x="656" y="1246" class="small">for this schedule / anchor-instance</text>
+  <text x="656" y="1264" class="small" fill="#9c4a00">resolver-dependent — only NONE live today (SCH-4)</text>
   <text x="408" y="1312" text-anchor="middle" class="yn">No</text>
 
   <!-- phase label -->

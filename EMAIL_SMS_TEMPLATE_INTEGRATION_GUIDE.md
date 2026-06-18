@@ -88,6 +88,8 @@ Columns at `schema.prisma:227-251`. **`is_schedulable` is the new column** added
 
 One row = one send-rule. Columns per `EMAIL_SMS_SCHEDULING_IMPLEMENTATION_PLAN.md §2.1`.
 
+> In the Admin-API payload the schedule slot is the **array** `schedules: ScheduleRuleDto[]` — one element per send-rule (a template may carry several, e.g. one `ANCHOR_RELATIVE` plus one `FOLLOW_UP`). Multi-offset stays inside a single element's `offsets` array, **not** as extra array elements. Each single-row `notification_schedule` seed / JSONC block below maps to **one** element of that array.
+
 | Field | Required | Type / format | Allowed values | Example |
 |---|---|---|---|---|
 | `notification_template_id` | **yes** | Int FK → `notification_templates.id` | existing template id (must be `is_schedulable=true`) | `42` |
@@ -207,13 +209,15 @@ Reminds a vendor every 2 days, up to 3 times, to sign a contract; stops when sig
 ```jsonc
 {
   "is_schedulable": true,
-  "schedule": {
-    "schedule_kind": "FOLLOW_UP",
-    "send_time": "09:00",
-    "timezone": "America/New_York",
-    "follow_up": { "delayDays": 2, "repeatCount": 3 },
-    "stop_condition": "CONTRACT_SIGNED"
-  }
+  "schedules": [
+    {
+      "schedule_kind": "FOLLOW_UP",
+      "send_time": "09:00",
+      "timezone": "America/New_York",
+      "follow_up": { "delayDays": 2, "repeatCount": 3 },
+      "stop_condition": "CONTRACT_SIGNED"
+    }
+  ]
 }
 ```
 Worker behavior: when the contract event fires, the existing send site (which already holds recipients) captures the follow-up start into `recipients_snapshot`; the dispatch poller re-enqueues the next occurrence on each success until `repeatCount` (3) is hit or `CONTRACT_SIGNED` cancels the remainder. No DRR needed (recipients were resolved at the live send site). Note `frequency` is omitted, so repeats are spaced by `delayDays` (2). `CONTRACT_SIGNED` is a **resolver-pending** stop_condition (§2.3, plan §9) — `repeatCount: 3` is the hard backstop that bounds the series even before that resolver is wired.
@@ -284,24 +288,26 @@ Two nudges at −3 days and −1 day, both at 09:00 New York time.
 ```jsonc
 {
   "is_schedulable": true,
-  "schedule": {
-    "schedule_kind": "ANCHOR_RELATIVE",
-    "anchor_entity": "CART",
-    "anchor_field": "expiration_date",
-    "recipient_source": "client_email",
-    "replacements_map": {
-      "name": "client_first_name + ' ' + client_last_name",
-      "cart_number": "cart_number",
-      "expiration_date": "expiration_date"
-    },
-    "offsets": [
-      { "value": 3, "unit": "days", "direction": "before" },
-      { "value": 1, "unit": "days", "direction": "before" }
-    ],
-    "send_time": "09:00",
-    "timezone": "America/New_York",
-    "stop_condition": "CART_CONVERTED"
-  }
+  "schedules": [
+    {
+      "schedule_kind": "ANCHOR_RELATIVE",
+      "anchor_entity": "CART",
+      "anchor_field": "expiration_date",
+      "recipient_source": "client_email",
+      "replacements_map": {
+        "name": "client_first_name + ' ' + client_last_name",
+        "cart_number": "cart_number",
+        "expiration_date": "expiration_date"
+      },
+      "offsets": [
+        { "value": 3, "unit": "days", "direction": "before" },
+        { "value": 1, "unit": "days", "direction": "before" }
+      ],
+      "send_time": "09:00",
+      "timezone": "America/New_York",
+      "stop_condition": "CART_CONVERTED"
+    }
+  ]
 }
 ```
 Worker behavior: each tick finds carts whose `expiration_date` falls in the offset windows, computes `fire_at` with `date-fns-tz` (DST-correct) in `America/New_York`, then resolves the recipient from `recipient_source` (`Cart.client_email`) and the `{{token}}` replacements from `replacements_map` against the cart row, snapshotting both onto the occurrence (so dispatch needs no re-resolution). It upserts PENDING occurrences keyed by `dedupe_key` and dispatches the due ones via `MailerService.sendFromTemplate()`. Because `Cart.expiration_date` **and** `Cart.client_email` are nullable, the materializer **SKIPS** carts where either is null. (`CART_CONVERTED` is a resolver-pending stop_condition — §2.3; the two `offsets` are the real backstop, so the series is naturally finite even before that resolver lands.)

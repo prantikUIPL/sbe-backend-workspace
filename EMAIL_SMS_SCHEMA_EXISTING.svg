@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 920" font-family="Helvetica,Arial,sans-serif">
+  <style>
+    .title  { font-size: 22px; font-weight: 700; fill: #1A237E; }
+    .sub    { font-size: 13px; fill: #455A64; }
+    .ehdr   { font-size: 14px; font-weight: 700; fill: #FFFFFF; }
+    .col    { font-size: 11px; fill: #212121; font-family: "SF Mono",Menlo,Consolas,monospace; }
+    .pk     { font-weight: 700; fill: #B71C1C; }
+    .fk     { fill: #1565C0; font-style: italic; }
+    .note   { font-size: 10.5px; fill: #607D8B; font-style: italic; }
+    .rel    { font-size: 11px; fill: #37474F; font-weight: 700; }
+    .legt   { font-size: 12px; fill: #37474F; }
+    .grp    { font-size: 12px; font-weight: 700; fill: #6A1B9A; }
+  </style>
+
+  <text x="40" y="40" class="title">Email &amp; SMS Management — Existing Schema (today)</text>
+  <text x="40" y="60" class="sub">Notification core as it exists in admin-backend-api/prisma/schema.prisma. No scheduling engine; domain date-fields are unlinked.</text>
+
+  <!-- ============ trigger_events ============ -->
+  <g>
+    <rect x="40" y="110" width="300" height="156" rx="6" fill="#FFFFFF" stroke="#37474F" stroke-width="1.5"/>
+    <rect x="40" y="110" width="300" height="28" rx="6" fill="#37474F"/>
+    <rect x="40" y="124" width="300" height="14" fill="#37474F"/>
+    <text x="54" y="129" class="ehdr">trigger_events</text>
+    <text x="54" y="158" class="col"><tspan class="pk">id</tspan>  Int  PK</text>
+    <text x="54" y="176" class="col">slug  VarChar(150)  UNIQUE</text>
+    <text x="54" y="194" class="col">label  VarChar(255)</text>
+    <text x="54" y="212" class="col">available_placeholders  Json?</text>
+    <text x="54" y="230" class="col">is_custom  Boolean</text>
+    <text x="54" y="248" class="col">created_at / updated_at  Timestamptz</text>
+    <text x="54" y="262" class="note">code-controlled catalog · no admin CRUD</text>
+  </g>
+
+  <!-- ============ notification_templates (hub) ============ -->
+  <g>
+    <rect x="450" y="80" width="350" height="318" rx="6" fill="#FFFFFF" stroke="#1A237E" stroke-width="2"/>
+    <rect x="450" y="80" width="350" height="28" rx="6" fill="#1A237E"/>
+    <rect x="450" y="94" width="350" height="14" fill="#1A237E"/>
+    <text x="464" y="99" class="ehdr">notification_templates</text>
+    <text x="464" y="128" class="col"><tspan class="pk">id</tspan>  Int  PK</text>
+    <text x="464" y="146" class="col"><tspan class="fk">notification_type</tspan>  VarChar(150)</text>
+    <text x="474" y="160" class="note">FK → trigger_events.slug</text>
+    <text x="464" y="178" class="col">template_name  VarChar(255)</text>
+    <text x="464" y="196" class="col">tag  NotificationTemplateType</text>
+    <text x="464" y="214" class="col">channel  NotificationChannel</text>
+    <text x="464" y="232" class="col">subject  VarChar(255)?</text>
+    <text x="464" y="250" class="col">body  Text</text>
+    <text x="464" y="268" class="col">language  VarChar(10)</text>
+    <text x="464" y="286" class="col">channel_config  Json?</text>
+    <text x="464" y="304" class="col">is_predefined  Boolean</text>
+    <text x="464" y="322" class="col">schedule_config  Json?</text>
+    <text x="464" y="340" class="col">follow_up_config  Json?</text>
+    <text x="474" y="354" class="note">present but advisory — read by nothing</text>
+    <text x="464" y="372" class="col">is_active  Boolean</text>
+    <text x="464" y="390" class="col">created_at / updated_at  Timestamptz</text>
+  </g>
+
+  <!-- ============ notification_logs ============ -->
+  <g>
+    <rect x="900" y="80" width="260" height="246" rx="6" fill="#FFFFFF" stroke="#37474F" stroke-width="1.5"/>
+    <rect x="900" y="80" width="260" height="28" rx="6" fill="#37474F"/>
+    <rect x="900" y="94" width="260" height="14" fill="#37474F"/>
+    <text x="914" y="99" class="ehdr">notification_logs</text>
+    <text x="914" y="128" class="col"><tspan class="pk">id</tspan>  BigInt  PK</text>
+    <text x="914" y="146" class="col"><tspan class="fk">notification_template_id</tspan>  Int</text>
+    <text x="924" y="160" class="note">FK → notification_templates.id</text>
+    <text x="914" y="178" class="col">email  VarChar(255)?</text>
+    <text x="914" y="196" class="col"><tspan class="fk">user_id</tspan> / <tspan class="fk">exhibitor_id</tspan>  Int?</text>
+    <text x="914" y="214" class="col">provider / provider_message_id</text>
+    <text x="914" y="232" class="col">status  VarChar(50)</text>
+    <text x="914" y="250" class="col">retry_count  Int</text>
+    <text x="914" y="268" class="col">subject? / body / language</text>
+    <text x="914" y="286" class="col">error  Text?   sent_at  Timestamptz?</text>
+    <text x="914" y="304" class="col">created_at / updated_at  Timestamptz</text>
+    <text x="914" y="320" class="note">per-send delivery ledger</text>
+  </g>
+
+  <!-- ============ allowed_from_domains ============ -->
+  <g>
+    <rect x="40" y="320" width="300" height="120" rx="6" fill="#FFFFFF" stroke="#37474F" stroke-width="1.5"/>
+    <rect x="40" y="320" width="300" height="28" rx="6" fill="#37474F"/>
+    <rect x="40" y="334" width="300" height="14" fill="#37474F"/>
+    <text x="54" y="339" class="ehdr">allowed_from_domains</text>
+    <text x="54" y="368" class="col"><tspan class="pk">id</tspan>  Int  PK</text>
+    <text x="54" y="386" class="col">domain  VarChar(255)  UNIQUE</text>
+    <text x="54" y="404" class="col">is_active  Boolean</text>
+    <text x="54" y="422" class="col">created_at / updated_at  Timestamptz</text>
+    <text x="54" y="436" class="note" fill="#90A4AE">service-layer FROM whitelist (standalone)</text>
+  </g>
+
+  <!-- ============ enums ============ -->
+  <g>
+    <rect x="900" y="360" width="260" height="116" rx="6" fill="#FFF8E1" stroke="#F9A825" stroke-width="1.5"/>
+    <text x="914" y="382" class="grp">enums</text>
+    <text x="914" y="404" class="col">NotificationChannel</text>
+    <text x="924" y="420" class="note">{ EMAIL, SMS }</text>
+    <text x="914" y="442" class="col">NotificationTemplateType</text>
+    <text x="924" y="458" class="note">{ Store, Internal, Vendor, Product, PPL, System }</text>
+  </g>
+
+  <!-- ============ domain tables (unlinked today) ============ -->
+  <text x="40" y="540" class="grp">Existing domain records — carry candidate date fields, but NO relationship to notifications today</text>
+  <g>
+    <rect x="40" y="556" width="270" height="118" rx="6" fill="#ECEFF1" stroke="#78909C" stroke-width="1.5"/>
+    <rect x="40" y="556" width="270" height="26" rx="6" fill="#78909C"/>
+    <rect x="40" y="569" width="270" height="13" fill="#78909C"/>
+    <text x="54" y="574" class="ehdr">Cart</text>
+    <text x="54" y="602" class="col"><tspan class="pk">id</tspan>  Int  PK</text>
+    <text x="54" y="620" class="col">expiration_date  Timestamptz?</text>
+    <text x="54" y="638" class="col">client_email  VarChar(255)?</text>
+    <text x="54" y="660" class="note">@@index([expiration_date])</text>
+  </g>
+  <g>
+    <rect x="330" y="556" width="270" height="118" rx="6" fill="#ECEFF1" stroke="#78909C" stroke-width="1.5"/>
+    <rect x="330" y="556" width="270" height="26" rx="6" fill="#78909C"/>
+    <rect x="330" y="569" width="270" height="13" fill="#78909C"/>
+    <text x="344" y="574" class="ehdr">Order</text>
+    <text x="344" y="602" class="col"><tspan class="pk">id</tspan>  Int  PK</text>
+    <text x="344" y="620" class="col">paid_in_full_at  Timestamptz?</text>
+    <text x="344" y="638" class="col">billing_email  VarChar(255)?</text>
+    <text x="344" y="660" class="note">completion-set (after-the-fact)</text>
+  </g>
+  <g>
+    <rect x="620" y="556" width="270" height="118" rx="6" fill="#ECEFF1" stroke="#78909C" stroke-width="1.5"/>
+    <rect x="620" y="556" width="270" height="26" rx="6" fill="#78909C"/>
+    <rect x="620" y="569" width="270" height="13" fill="#78909C"/>
+    <text x="634" y="574" class="ehdr">PaymentTransaction</text>
+    <text x="634" y="602" class="col"><tspan class="pk">id</tspan>  Int  PK</text>
+    <text x="634" y="620" class="col">due_date  Timestamptz  NOT NULL</text>
+    <text x="634" y="638" class="col">→ order.billing_email (1 hop)</text>
+    <text x="634" y="660" class="note">@@index([status, due_date]) · strongest</text>
+  </g>
+  <g>
+    <rect x="910" y="556" width="250" height="118" rx="6" fill="#ECEFF1" stroke="#78909C" stroke-width="1.5"/>
+    <rect x="910" y="556" width="250" height="26" rx="6" fill="#78909C"/>
+    <rect x="910" y="569" width="250" height="13" fill="#78909C"/>
+    <text x="924" y="574" class="ehdr">Shows</text>
+    <text x="924" y="602" class="col"><tspan class="pk">id</tspan>  Int  PK</text>
+    <text x="924" y="620" class="col">date  Date?   (date-only)</text>
+    <text x="924" y="638" class="col">timezone  VarChar(50)?</text>
+    <text x="924" y="660" class="note">weak anchor · model is "Shows"</text>
+  </g>
+
+  <!-- ============ relationships ============ -->
+  <!-- trigger_events 1 -> N notification_templates -->
+  <line x1="340" y1="160" x2="450" y2="150" stroke="#1A237E" stroke-width="2"/>
+  <text x="352" y="146" class="rel">1</text>
+  <text x="432" y="166" class="rel">N</text>
+  <text x="346" y="186" class="note" fill="#1A237E">slug ← notification_type</text>
+
+  <!-- notification_templates 1 -> N notification_logs -->
+  <line x1="800" y1="150" x2="900" y2="150" stroke="#1A237E" stroke-width="2"/>
+  <text x="808" y="144" class="rel">1</text>
+  <text x="884" y="144" class="rel">N</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="40" y="710" width="1120" height="150" rx="6" fill="#FAFAFA" stroke="#CFD8DC"/>
+    <text x="56" y="732" class="grp">Legend</text>
+    <text x="56" y="756" class="col"><tspan class="pk">bold red</tspan> = primary key</text>
+    <text x="320" y="756" class="col"><tspan class="fk">blue italic</tspan> = foreign key</text>
+    <text x="560" y="756" class="col">UNIQUE / NOT NULL = column constraints</text>
+    <text x="56" y="780" class="legt">• Only two relationships exist today: trigger_events 1—N notification_templates (slug FK), and notification_templates 1—N notification_logs.</text>
+    <text x="56" y="800" class="legt">• schedule_config / follow_up_config JSON columns already exist on notification_templates but are advisory — nothing reads them at runtime.</text>
+    <text x="56" y="820" class="legt">• Sends are immediate/transactional on a trigger; there is no schedule table, no occurrence queue, no time-based dispatch.</text>
+    <text x="56" y="840" class="legt">• Domain tables (Cart, Order, PaymentTransaction, Shows) hold date fields that could anchor scheduled sends, but have NO FK or logical link to notifications today.</text>
+  </g>
+</svg>
