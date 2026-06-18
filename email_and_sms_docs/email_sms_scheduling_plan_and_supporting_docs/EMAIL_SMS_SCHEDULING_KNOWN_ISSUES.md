@@ -7,11 +7,11 @@
 > - `EMAIL_SMS_SCHEDULING_IMPLEMENTATION_PLAN.md` (tables, the `is_schedulable` / `supports_scheduling` marking + backfill, worker heartbeat poller, timezone `EVENT`|IANA, stop-conditions)
 > - `EMAIL_SMS_TEMPLATE_INTEGRATION_GUIDE.md` (per-field value reference for registering a non-seeded template + its schedule)
 >
-> This is a **sibling** register to `EMAIL_SMS_KNOWN_ISSUES.md` (the base-module register). Scheduling was deferred from the base sprint per a verbal BA agreement (2026-06-03) and is tracked here as its own effort. Items that originate in the base module but block or shape scheduling are cross-referenced by their base `#` number.
+> This is a **sibling** register to `EMAIL_SMS_KNOWN_ISSUES.md` (the base-module register). Scheduling was deferred from the base sprint per a verbal BA agreement (2026-06-03) and is tracked here as its own effort. **Note (provenance):** that deferral is *verbal*; the written client thread `SBE_client_feedback_email_sms.pdf` ends with the client (Theo, May 20 2026) explicitly rejecting the deferral and insisting time-delays be built — see **SCH-7** and story §1.1. Items that originate in the base module but block or shape scheduling are cross-referenced by their base `#` number.
 >
 > **Implementation status:** design complete (now incl. the schedulability marking + dev integration guide); **build not started.**
 >
-> **Last updated:** 2026-06-18 — register extended alongside the updated implementation plan (the `is_schedulable` / `supports_scheduling` marking + the dev integration guide). Added **SCH-2** (open product decision — which triggers get `supports_scheduling = true`), **SCH-3** (FOLLOW_UP `recipients_snapshot` PII / staleness), **SCH-4** (`stop_condition` resolver set not finalized), **SCH-5** (`TEMPLATE_META` widening build-prerequisite), and **SCH-6** (recipient-feasibility — column-recipient sends in scope, token-recipient deferred to base #3 / DRR). Original entry **SCH-1** = three lead-distribution lifecycle slugs demoted to trigger-only stubs (recoverable from git).
+> **Last updated:** 2026-06-18 — register extended alongside the updated implementation plan (the `is_schedulable` / `supports_scheduling` marking + the dev integration guide). Added **SCH-2** (open product decision — which triggers get `supports_scheduling = true`), **SCH-3** (FOLLOW_UP `recipients_snapshot` PII / staleness), **SCH-4** (`stop_condition` resolver set not finalized), **SCH-5** (`TEMPLATE_META` widening build-prerequisite), and **SCH-6** (recipient-feasibility — column-recipient sends in scope, token-recipient deferred to base #3 / DRR). Also added **SCH-7** (several client-cited reminders anchor on deferred event/workshop/show-date anchors — from the `SBE_client_feedback_email_sms.pdf` thread). Original entry **SCH-1** = three lead-distribution lifecycle slugs demoted to trigger-only stubs (recoverable from git).
 
 ---
 
@@ -25,6 +25,7 @@
 | SCH-4 | `stop_condition` resolver set **not finalized** — only `NONE` is guaranteed live; the planned resolvers (`CONTRACT_SIGNED` / `QUESTION_ANSWERED` / `CART_CONVERTED`) each need a worker resolver; **a series set to an unbuilt resolver never auto-stops** | Open — bound with `repeatCount` / `end_window_at` until resolvers land | Us | enum `NotificationStopCondition` |
 | SCH-5 | `TEMPLATE_META` value type has no `is_schedulable` key — must **widen the type + update the seeder merge** before any schedulable seed compiles / its flag persists | Build prerequisite (tracked, sequencing) | Us | none (seeder code only) |
 | SCH-6 | Recipient feasibility: scheduled sends **dispatch now only** when recipients are fixed or an **anchor-row column**; token recipients (`{salesperson}`, speaker lists) stay deferred to DRR | Scoped — column/fixed in scope; token deferred (base #3) | Us | new `recipient_source` / `replacements_map` columns on schedules |
+| SCH-7 | Several **client-cited** reminders (workshop confirmation −24h, keynote reminder −7d, electric order −35d/−7d) all anchor on the **event / workshop / show-date** anchors this build **defers** — the engine ships, but those event-proximity sends stay non-functional until the anchors are modelled | **Open — scope/expectation gap to confirm with Product/client** | Product + us (anchor modelling is a separate effort) | new domain date+timezone anchors (event/workshop/show) — not in this build |
 
 ---
 
@@ -132,6 +133,28 @@ So scheduled sends whose recipients are **fixed or an anchor-row column dispatch
 
 ---
 
+## SCH-7. Client's top-priority reminders depend on anchors this build defers
+
+**Finding (from `SBE_client_feedback_email_sms.pdf`, the May 14–20 2026 client thread).** When UIPL proposed deferring time-delays, the client (Theo Giovanopoulos, SVP Ops) pushed back — and his message is the **last in the thread, unanswered** — naming specific time-based triggers he expects to be built:
+
+> *"…the workshop confirmation triggers 24 hours before the workshop time, the workshop keynote reminder triggers 7 days before the time of the event, electric order reminders trigger 35 and 7 days before the event… so if this is not built now how would you handle these triggers that were documented in our initial requirements?"*
+
+These three headline reminders, and their anchors:
+
+| Client reminder | Anchor it needs | Offset(s) | Anchor status in this build |
+|---|---|---|---|
+| Workshop confirmation (SMS) | **workshop scheduled time** | −24h | ❌ not modelled (and SMS dispatch deferred, base #2) |
+| Workshop / keynote reminder | **event time** | −7d | ❌ not modelled |
+| Electric order reminders | **event date** | −35d **and** −7d (multi-offset) | ❌ not modelled |
+
+**Why this matters.** The scheduling design delivers the full **engine** (the three kinds, multi-offset, timezone, stop-conditions, the materialize→dispatch pipeline). But the in-scope anchors are only `Cart.expiration_date`, `PaymentTransaction.due_date`, and `Order.paid_in_full_at` — which carry cart-expiry, payment-due, and order-follow-up sends. **None of the event-proximity reminders the client cited map to the in-scope anchors.** They depend on the **event / show date + timezone** and **workshop scheduled time**, which are flagged unbuilt (see the Deferred-scope bullet below). So after this build, those reminders are *configurable in principle* but **not functional** until the event/workshop/show-date anchors (and their timezones) are modelled — a separate, larger effort.
+
+**The mechanics are already covered** — multi-offset (−35d & −7d on one rule), `EVENT` timezone, and the offset model all exist in the plan/story; the gap is purely the **anchor data**, not the scheduling logic.
+
+**Status / recommendation:** **Open — confirm scope/expectations with Product (and ultimately the client).** Two honest options to surface: (a) ship the engine on the in-scope anchors now and schedule the event/workshop/show-date anchor modelling as the immediate follow-on; or (b) pull the show-date anchor (and a workshop-time field) into *this* effort if the client's event-proximity reminders are must-have at launch. No schema change is needed to *add* an anchor later — `anchor_entity`/`anchor_field` are open — so (a) does not paint us into a corner. Cross-ref: story §1.1 + §6 coverage caveat, plan §4.7 (anchor table) / §9, and the Deferred-scope "Unbuilt client anchors" bullet below.
+
+---
+
 ## Deferred scheduling scope (carried from the base module, for context)
 
 These were specified in V2 and deferred from the base sprint; they are the substance of this effort. Tracked in full in `EMAIL_SMS_SCHEDULING_STORY.md` / `..._IMPLEMENTATION_PLAN.md` and summarized here so this register is self-contained.
@@ -140,4 +163,4 @@ These were specified in V2 and deferred from the base sprint; they are the subst
 - **SMS provider** (base #2) — several scheduling targets are SMS (workshop confirmation −24h, unanswered-questions reminders). SMS sending is gated until a provider is integrated; SMS occurrences materialize but dispatch is `SKIPPED`.
 - **Dynamic recipient resolution** (base #3) — token recipients (`{salesperson}`, speaker lists) are deferred; column/fixed recipients dispatch now (see **SCH-6** for the in-scope boundary).
 - **Live send-path predefined scoping** (base #21) — the `is_predefined` + `orderBy` fix to `sendFromTemplate` is **planned to ship together with the scheduling logic**; carry it into this effort.
-- **Unbuilt client anchors** — vendor/venue/GSC/electric logistics, event-alert / event-photos, workshop confirm/reminder emails and their primary anchors (event/show date + timezone, workshop scheduled time) are **not** among the currently-built predefined triggers; flagged as dependencies. The build targets anchors that exist today (`Cart.expiration_date`, `PaymentTransaction.due_date`, and the show date/timezone where already modelled).
+- **Unbuilt client anchors** — vendor/venue/GSC/electric logistics, event-alert / event-photos, workshop confirm/reminder emails and their primary anchors (event/show date + timezone, workshop scheduled time) are **not** among the currently-built predefined triggers; flagged as dependencies. The build targets anchors that exist today (`Cart.expiration_date`, `PaymentTransaction.due_date`, and the show date/timezone where already modelled). **See SCH-7** — these unbuilt anchors carry several reminders the client cited in the feedback thread, so this is a confirmed scope/expectation gap, not just a long-tail dependency.
