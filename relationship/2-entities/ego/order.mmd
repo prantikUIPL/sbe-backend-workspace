@@ -1,0 +1,22 @@
+flowchart LR
+    ORDER(["Order"])
+    COMPANY["Company"]
+    CART["Cart"]
+    SUB["CompanySubscription"]
+    OI["OrderItem"]
+    OA["OrderAgreement"]
+    INV["Invoice"]
+    PT["PaymentTransaction"]
+
+    COMPANY -->|"places (1→N)"| ORDER
+    CART -->|"converts to (1→1)"| ORDER
+    SUB -.->|"renews via (1→N)"| ORDER
+    ORDER -->|"contains (1→N)"| OI
+    ORDER -->|"signed via (1→1)"| OA
+    ORDER -->|"billed by (1→N)"| INV
+    ORDER -->|"paid by (1→N)"| PT
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class ORDER ego;
+    class COMPANY,CART,SUB,OI,OA,INV,PT neighbor;

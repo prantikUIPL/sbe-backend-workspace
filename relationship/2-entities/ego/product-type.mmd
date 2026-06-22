@@ -1,0 +1,16 @@
+flowchart LR
+    PT(["ProductType"])
+    PARENT["ProductType (parent)"]
+    CHILD["ProductType (children)"]
+    PROD["Product (main type)"]
+    ADDON["Product (add-on sub-type)"]
+
+    PARENT -->|"parent of (1→N)"| PT
+    PT -->|"has children (1→N)"| CHILD
+    PT -->|"types (1→N)"| PROD
+    PT -->|"is add-on type of (1→N)"| ADDON
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class PT ego;
+    class PARENT,CHILD,PROD,ADDON neighbor;

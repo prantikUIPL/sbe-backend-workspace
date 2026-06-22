@@ -1,0 +1,18 @@
+flowchart LR
+    OI(["OrderItem"])
+    ORDER["Order"]
+    PROD["Product"]
+    PLAN["SubscriptionPlan"]
+    PKG["PplAddonPackage"]
+    SP["ShowProduct"]
+
+    ORDER -->|"contains (1→N)"| OI
+    OI -.->|"when product (N→1)"| PROD
+    OI -.->|"when subscription (N→1)"| PLAN
+    OI -.->|"when ppl_addon (N→1)"| PKG
+    OI -.->|"per-show offer (N→1)"| SP
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class OI ego;
+    class ORDER,PROD,PLAN,PKG,SP neighbor;

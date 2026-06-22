@@ -1,0 +1,14 @@
+flowchart LR
+    OA(["OrderAgreement"])
+    ORDER["Order"]
+    AGR["Agreement (terms template)"]
+
+    ORDER -->|"signed via (1→1)"| OA
+    OA -.->|"snapshots terms_version of"| AGR
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    classDef ghost fill:#f5f5f5,stroke:#bbb,color:#777,stroke-dasharray:4 3;
+    class OA ego;
+    class ORDER neighbor;
+    class AGR ghost;

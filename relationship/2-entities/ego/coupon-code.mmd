@@ -1,0 +1,20 @@
+flowchart LR
+    CC(["CouponCode"])
+    CART["Cart"]
+    CS["CouponShows"]
+    CP["CouponProducts"]
+    CCITY["CouponCities"]
+    REWARD["Product (reward)"]
+    LOG["CouponAuditLog"]
+
+    CC -->|"applied to (1→N)"| CART
+    CC -->|"scoped to shows via (1→N)"| CS
+    CC -->|"scoped to products via (1→N)"| CP
+    CC -->|"scoped to cities via (1→N)"| CCITY
+    CC -.->|"grants reward (N→1)"| REWARD
+    CC -->|"audited by (1→N)"| LOG
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class CC ego;
+    class CART,CS,CP,CCITY,REWARD,LOG neighbor;

@@ -1,0 +1,22 @@
+flowchart LR
+    COMPANY(["Company"])
+    EXH["Exhibitor"]
+    CART["Cart"]
+    ORDER["Order"]
+    INV["Invoice"]
+    PT["PaymentTransaction"]
+    SUB["CompanySubscription"]
+    PM["PaymentMethod"]
+
+    COMPANY -->|"logged in as (1→1)"| EXH
+    COMPANY -->|"builds (1→N)"| CART
+    COMPANY -->|"places (1→N)"| ORDER
+    COMPANY -->|"billed via (1→N)"| INV
+    COMPANY -->|"charged via (1→N)"| PT
+    COMPANY -->|"subscribes (1→N)"| SUB
+    COMPANY -->|"saves cards (1→N)"| PM
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class COMPANY ego;
+    class EXH,CART,ORDER,INV,PT,SUB,PM neighbor;

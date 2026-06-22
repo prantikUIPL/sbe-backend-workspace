@@ -1,0 +1,20 @@
+flowchart LR
+    CART(["Cart"])
+    COMPANY["Company"]
+    COUPON["CouponCode"]
+    REP["User (sales rep)"]
+    CI["CartItem"]
+    IR["InventoryReservation"]
+    ORDER["Order"]
+
+    COMPANY -->|"owns (1→N)"| CART
+    COUPON -.->|"discounts (N→1)"| CART
+    REP -.->|"assigned to (N→1)"| CART
+    CART -->|"contains (1→N)"| CI
+    CART -->|"holds stock via (1→N)"| IR
+    CART -->|"converts to (1→1)"| ORDER
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class CART ego;
+    class COMPANY,COUPON,REP,CI,IR,ORDER neighbor;

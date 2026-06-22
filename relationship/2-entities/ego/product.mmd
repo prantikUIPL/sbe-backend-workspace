@@ -1,0 +1,20 @@
+flowchart LR
+    PROD(["Product"])
+    PTYPE["ProductType"]
+    AGR["Agreement"]
+    SP["ShowProduct"]
+    PRICE["ProductPriceTier / BoothSizePrice"]
+    CI["CartItem"]
+    OI["OrderItem"]
+
+    PROD -->|"typed as (N→1)"| PTYPE
+    PROD -->|"requires terms (N→1)"| AGR
+    PROD -->|"offered at shows as (1→N)"| SP
+    PROD -->|"priced by (1→N)"| PRICE
+    PROD -->|"added to carts as (1→N)"| CI
+    PROD -->|"ordered as (1→N)"| OI
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class PROD ego;
+    class PTYPE,AGR,SP,PRICE,CI,OI neighbor;

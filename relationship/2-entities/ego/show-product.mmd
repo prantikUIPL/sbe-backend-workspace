@@ -1,0 +1,18 @@
+flowchart LR
+    SP(["ShowProduct"])
+    SHOWS["Shows (event)"]
+    PROD["Product"]
+    CI["CartItem"]
+    OI["OrderItem"]
+    IR["InventoryReservation"]
+
+    SP -->|"offered at (N→1)"| SHOWS
+    SP -->|"of product (N→1)"| PROD
+    SP -->|"added to cart as (1→N)"| CI
+    SP -->|"ordered as (1→N)"| OI
+    SP -->|"stock tracked by (1→N)"| IR
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class SP ego;
+    class SHOWS,PROD,CI,OI,IR neighbor;

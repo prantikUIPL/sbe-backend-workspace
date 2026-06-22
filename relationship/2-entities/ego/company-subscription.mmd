@@ -1,0 +1,18 @@
+flowchart LR
+    SUB(["CompanySubscription"])
+    COMPANY["Company"]
+    PLAN["SubscriptionPlan"]
+    PM["PaymentMethod"]
+    ORDER["Order"]
+    LEAD["Lead"]
+
+    COMPANY -->|"subscribes (1→N)"| SUB
+    SUB -->|"on plan (N→1)"| PLAN
+    SUB -.->|"billed via (N→1)"| PM
+    SUB -->|"renews via (1→N)"| ORDER
+    SUB -->|"delivers (1→N)"| LEAD
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class SUB ego;
+    class COMPANY,PLAN,PM,ORDER,LEAD neighbor;
