@@ -1,0 +1,86 @@
+erDiagram
+    COMPANY ||--o{ ORDER : "places"
+    COMPANY ||--o{ INVOICE : "billed"
+    COMPANY ||--o{ PAYMENTTRANSACTION : "charged"
+    COMPANY ||--o{ PAYMENTMETHOD : "saves"
+    COMPANY ||--o{ COMPANYSUBSCRIPTION : "subscribes"
+    COMPANY ||--o| COMPANYSTRIPEACCOUNT : "linked to"
+    ORDER ||--o{ INVOICE : "billed by"
+    ORDER ||--o{ PAYMENTTRANSACTION : "paid by"
+    ORDER ||--o{ ORDERITEM : "has"
+    INVOICE ||--o{ INVOICELINEITEM : "breaks down"
+    INVOICE ||--o{ PAYMENTTRANSACTION : "settled by"
+    INVOICE ||--o{ LEADTRANSACTIONLOG : "audited by"
+    SUBSCRIPTIONPLAN ||--o{ COMPANYSUBSCRIPTION : "subscribed as"
+    SUBSCRIPTIONPLAN ||--o{ SUBSCRIPTIONPLANFEATURE : "lists"
+    SUBSCRIPTIONPLAN ||--o{ ORDERITEM : "sold as"
+    COMPANYSUBSCRIPTION ||--o{ ORDER : "renewed by"
+    COMPANYSUBSCRIPTION ||--o{ LEADTRANSACTIONLOG : "credits"
+    PAYMENTMETHOD ||--o{ COMPANYSUBSCRIPTION : "backs"
+    PAYMENTTRANSACTION {
+        int id PK
+        int order_id FK
+        int invoice_id FK
+        int company_id FK
+        int installment_number
+        string status
+    }
+    INVOICE {
+        int id PK
+        int order_id FK
+        int company_id FK
+        string invoice_number
+        string status
+        decimal total
+    }
+    INVOICELINEITEM {
+        int id PK
+        int invoice_id FK
+        decimal amount
+    }
+    SUBSCRIPTIONPLAN {
+        int id PK
+        string name
+        string plan_type
+        int lead_credits
+    }
+    SUBSCRIPTIONPLANFEATURE {
+        int id PK
+        int subscription_plan_id FK
+        string name
+    }
+    COMPANYSUBSCRIPTION {
+        int id PK
+        int company_id FK
+        int subscription_plan_id FK
+        int payment_method_id FK
+        string status
+    }
+    PAYMENTMETHOD {
+        int id PK
+        int company_id FK
+        string used_for
+        boolean is_default
+    }
+    COMPANYSTRIPEACCOUNT {
+        int id PK
+        int company_id FK
+        string stripe_id
+    }
+    LEADTRANSACTIONLOG {
+        int id PK
+        int company_id FK
+        int subscription_id FK
+        int invoice_id FK
+        int credits
+    }
+    ORDER {
+        int id PK
+        string order_type
+        string status
+    }
+    ORDERITEM {
+        int id PK
+        int order_id FK
+        string item_type
+    }

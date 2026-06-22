@@ -1,0 +1,92 @@
+erDiagram
+    COMPANY ||--o{ CART : "builds"
+    COMPANY ||--o{ ORDER : "places"
+    COMPANY ||--o{ COMPANYSUBSCRIPTION : "subscribes"
+    COMPANY ||--o{ INVOICE : "billed via"
+    COMPANY ||--o{ PAYMENTTRANSACTION : "charged via"
+    SHOWS ||--o{ SHOWPRODUCT : "offers"
+    PRODUCT ||--o{ SHOWPRODUCT : "sold as"
+    UNIVERSALBOOTH ||--o{ UNIVERSALBOOTHSECONDARYIMAGE : "gallery"
+    CART ||--o| ORDER : "signs into"
+    CART ||--o{ CARTITEM : "contains"
+    SHOWPRODUCT ||--o{ CARTITEM : "added as"
+    COUPONCODE ||--o{ CART : "applied to"
+    ORDER ||--|| ORDERAGREEMENT : "signed via"
+    ORDER ||--o{ ORDERITEM : "snapshots"
+    ORDER ||--o{ INVOICE : "billed by"
+    ORDER ||--o{ PAYMENTTRANSACTION : "paid by"
+    COMPANYSUBSCRIPTION ||--o{ ORDER : "renews via"
+    AGREEMENT ||--o{ PRODUCT : "terms for"
+    COMPANY {
+        int id PK
+        string name
+        decimal lead_balance
+    }
+    SHOWS {
+        int id PK
+        string title
+        int city_id FK
+    }
+    PRODUCT {
+        int id PK
+        string name
+        int agreement_id FK
+    }
+    SHOWPRODUCT {
+        int id PK
+        int show_id FK
+        int product_id FK
+        decimal sales_price
+    }
+    UNIVERSALBOOTH {
+        int id PK
+        string name
+    }
+    CART {
+        int id PK
+        string cart_number
+        int company_id FK
+        int coupon_code_id FK
+    }
+    ORDER {
+        int id PK
+        string order_number
+        string order_type
+        int cart_id FK
+        int company_subscription_id FK
+    }
+    ORDERAGREEMENT {
+        int id PK
+        int order_id FK
+        datetime signed_at
+    }
+    ORDERITEM {
+        int id PK
+        int order_id FK
+        string item_type
+    }
+    AGREEMENT {
+        int id PK
+        string type
+        string version
+    }
+    INVOICE {
+        int id PK
+        string invoice_number
+        int order_id FK
+    }
+    PAYMENTTRANSACTION {
+        int id PK
+        int order_id FK
+        string status
+    }
+    COMPANYSUBSCRIPTION {
+        int id PK
+        int company_id FK
+        string status
+    }
+    COUPONCODE {
+        int id PK
+        string code
+        string coupon_type
+    }

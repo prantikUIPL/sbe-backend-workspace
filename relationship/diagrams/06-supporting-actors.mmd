@@ -1,0 +1,100 @@
+erDiagram
+    COMPANY ||--o| EXHIBITOR : "login actor"
+    COMPANY ||--o{ LEAD : "receives"
+    COMPANY ||--o{ COMPANYINDUSTRY : "serves industries"
+    COMPANY ||--o{ COMPANYCATEGORY : "offers categories"
+    COMPANY ||--o{ COMPANYZIPCODE : "service area"
+    COMPANY ||--o{ GIFTCERTIFICATEPURCHASE : "buys"
+    COMPANY ||--o{ GIFTCERTIFICATEREDEEM : "redeems"
+    COMPANY ||--o{ PPLCOMPANYACCOUNTHISTORY : "audited by"
+    ATTENDEE ||--o{ LEAD : "becomes"
+    ATTENDEE }o--|| INDUSTRY : "classified by"
+    INDUSTRY ||--o{ COMPANYINDUSTRY : "mapped via"
+    CATEGORY ||--o{ COMPANYCATEGORY : "mapped via"
+    USER ||--o{ PPLCOMPANYACCOUNTHISTORY : "acts in"
+    GIFTCERTIFICATE ||--o{ GIFTCERTIFICATEPURCHASE : "template for"
+    GIFTCERTIFICATE ||--o{ GIFTCERTIFICATEREDEEM : "template for"
+    GIFTCERTIFICATEPURCHASE ||--o{ GIFTCERTIFICATEREDEEM : "drawn from"
+    ORDER ||--o{ GIFTCERTIFICATEREDEEM : "applied to"
+    ORDER ||--o{ PPLCOMPANYACCOUNTHISTORY : "triggers"
+    COMPANY {
+        int id PK
+        string name
+        decimal lead_balance
+        string status
+    }
+    EXHIBITOR {
+        int id PK
+        string email
+        int company_id FK
+    }
+    USER {
+        int id PK
+        string email
+        string status
+    }
+    ATTENDEE {
+        int id PK
+        string email
+        int industry_id FK
+    }
+    LEAD {
+        int id PK
+        int company_id FK
+        int attendee_id FK
+        int company_subscription_id FK
+        string status
+        decimal cost
+    }
+    INDUSTRY {
+        int id PK
+        string name
+    }
+    CATEGORY {
+        int id PK
+        string name
+    }
+    COMPANYINDUSTRY {
+        int id PK
+        int company_id FK
+        int industry_id FK
+    }
+    COMPANYCATEGORY {
+        int id PK
+        int company_id FK
+        int category_id FK
+    }
+    COMPANYZIPCODE {
+        int id PK
+        int company_id FK
+        string zip_code
+    }
+    GIFTCERTIFICATE {
+        int id PK
+        string name
+        decimal amount
+    }
+    GIFTCERTIFICATEPURCHASE {
+        int id PK
+        int company_id FK
+        int gift_certificate_id FK
+        decimal remaining_amount
+    }
+    GIFTCERTIFICATEREDEEM {
+        int id PK
+        int order_id FK
+        int company_id FK
+        int gift_certificate_purchase_id FK
+        decimal amount
+    }
+    PPLCOMPANYACCOUNTHISTORY {
+        int id PK
+        int company_id FK
+        int order_id FK
+        int user_id FK
+        string event
+    }
+    ORDER {
+        int id PK
+        string order_number
+    }

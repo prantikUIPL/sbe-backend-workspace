@@ -1,0 +1,87 @@
+erDiagram
+    AGREEMENT ||--o{ PRODUCT : "required by"
+    ORDER ||--|| ORDERAGREEMENT : "signed via"
+    COUPONCODE ||--o{ COUPONPRODUCTS : "scopes products"
+    COUPONCODE ||--o{ COUPONCITIES : "scopes cities"
+    COUPONCODE ||--o{ COUPONSHOWS : "scopes shows"
+    COUPONCODE ||--o{ COUPONAUDITLOG : "audited by"
+    COUPONCODE ||--o{ CART : "applied to"
+    COUPONCODE }o--o| PRODUCT : "rewards"
+    COUPONCODE }o--o| USER : "created by"
+    COUPONPRODUCTS }o--|| PRODUCT : "targets"
+    COUPONCITIES }o--|| CITY : "targets"
+    COUPONSHOWS }o--|| SHOWS : "targets"
+    COUPONAUDITLOG }o--o| ORDER : "redeemed on"
+    COUPONAUDITLOG }o--|| USER : "performed by"
+    AGREEMENT {
+        int id PK
+        string type
+        string version
+        boolean is_active
+        boolean is_default
+    }
+    ORDERAGREEMENT {
+        int id PK
+        int order_id FK
+        string signer_first_name
+        string terms_version
+        datetime signed_at
+    }
+    COUPONCODE {
+        int id PK
+        string code
+        string coupon_type
+        decimal discount_value
+        int reward_product_id FK
+        int created_by FK
+        string status
+    }
+    COUPONPRODUCTS {
+        int id PK
+        int coupon_id FK
+        int product_id FK
+        string type
+    }
+    COUPONCITIES {
+        int id PK
+        int coupon_id FK
+        int city_id FK
+        string type
+    }
+    COUPONSHOWS {
+        int id PK
+        int coupon_id FK
+        int show_id FK
+        string type
+    }
+    COUPONAUDITLOG {
+        int id PK
+        int coupon_id FK
+        int order_id FK
+        int performed_by FK
+        string action
+    }
+    ORDER {
+        int id PK
+        string order_number
+    }
+    PRODUCT {
+        int id PK
+        string name
+    }
+    CART {
+        int id PK
+        int coupon_code_id FK
+    }
+    CITY {
+        int id PK
+        string name
+    }
+    SHOWS {
+        int id PK
+        string title
+    }
+    USER {
+        int id PK
+        string email
+    }

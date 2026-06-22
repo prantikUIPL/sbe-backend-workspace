@@ -1,0 +1,100 @@
+erDiagram
+    CITY ||--o{ SHOWS : "hosts"
+    SHOWCLASS ||--o{ SHOWS : "classifies"
+    PRICETIER ||--o{ SHOWS : "prices"
+    SHOWS ||--o{ SHOWPRODUCT : "offers"
+    SHOWS ||--o{ ATTENDEESHOW : "registers"
+    PRODUCT ||--o{ SHOWPRODUCT : "sold as"
+    PRODUCT ||--o{ PRODUCTPRICETIER : "flat priced"
+    PRODUCT ||--o{ PRODUCTBOOTHSIZEPRICE : "addon matrix"
+    PRODUCTTYPE ||--o{ PRODUCT : "types"
+    PRODUCTTYPE ||--o{ PRODUCTTYPE : "parent of"
+    PRICETIER ||--o{ PRODUCTPRICETIER : "tier in"
+    PRICETIER ||--o{ PRODUCTBOOTHSIZEPRICE : "tier in"
+    SHOWPRODUCT ||--o{ BOOTHSIZEBASEDSHOWPRODUCTPRICES : "sized prices"
+    PRODUCT ||--o{ BOOTHSIZEBASEDSHOWPRODUCTPRICES : "booth key"
+    AGREEMENT ||--o{ PRODUCT : "terms for"
+    UNIVERSALBOOTH ||--o{ UNIVERSALBOOTHSECONDARYIMAGE : "gallery"
+    ATTENDEE ||--o{ ATTENDEESHOW : "joins"
+    SHOWS {
+        int id PK
+        string title
+        int city_id FK
+        int class_id FK
+        int price_tier_id FK
+        string status
+    }
+    SHOWPRODUCT {
+        int id PK
+        int show_id FK
+        int product_id FK
+        string price_type
+        int quantity
+        decimal sales_price
+    }
+    PRODUCT {
+        int id PK
+        string name
+        int product_type_id FK
+        int agreement_id FK
+        string price_type
+    }
+    PRODUCTTYPE {
+        int id PK
+        string name
+        int parent_type_id FK
+    }
+    PRODUCTPRICETIER {
+        int id PK
+        int product_id FK
+        int price_tier_id FK
+        decimal sales_price
+    }
+    PRODUCTBOOTHSIZEPRICE {
+        int id PK
+        int product_id FK
+        int booth_size_id FK
+        int price_tier_id FK
+    }
+    BOOTHSIZEBASEDSHOWPRODUCTPRICES {
+        int id PK
+        int booth_id FK
+        int show_product_id FK
+        decimal sales_price
+    }
+    PRICETIER {
+        int id PK
+        string name
+        string status
+    }
+    SHOWCLASS {
+        int id PK
+        string title
+    }
+    CITY {
+        int id PK
+        string name
+        string slug
+    }
+    UNIVERSALBOOTH {
+        int id PK
+        string name
+    }
+    UNIVERSALBOOTHSECONDARYIMAGE {
+        int id PK
+        int universal_booth_id FK
+        int display_order
+    }
+    ATTENDEESHOW {
+        int id PK
+        int attendee_id FK
+        int show_id FK
+    }
+    ATTENDEE {
+        int id PK
+        string email
+    }
+    AGREEMENT {
+        int id PK
+        string type
+    }

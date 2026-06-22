@@ -1,0 +1,18 @@
+flowchart LR
+    A[Company browses Shows] -->|Show offers| B[ShowProducts: booths and addons]
+    B -->|add line items| C[Cart with CartItems]
+    C -->|apply| D[CouponCode discount]
+    D --> C
+    C -->|sign + accept terms| E[Order created]
+    E -->|capture signature| F[OrderAgreement immutable]
+    E -->|snapshot lines| G[OrderItems]
+    E -->|consume stock| H[InventoryReservation vs ShowProduct]
+    E -->|generate| I[Invoice + InvoiceLineItems]
+    I -->|full or split| J[PaymentTransaction installments]
+    J -->|Stripe webhook| K[StripeWebhookEvent dedup]
+    K -->|mark paid| I
+    E -->|optional| L[GiftCertificateRedeem]
+    J -->|succeeded| M[Order completed]
+    M -->|reserve booth space| N[Booth fulfillment at Show]
+    M -->|subscription order| O[CompanySubscription active]
+    O -->|grants| P[Lead credits + LeadTransactionLog]
