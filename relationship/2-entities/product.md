@@ -6,6 +6,8 @@ The **reusable catalog item** — a booth, workshop pavilion, sponsorship, or ad
 ## Its neighborhood
 ![Product ego diagram](ego/product.svg)
 
+📋 **Need the columns?** → [Product schema view](schema/product.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A Product **is typed as** one **[ProductType](product-type.md)** (N→1) — this is what makes it a booth vs pavilion vs sponsorship vs add-on.
 - A Product **may require terms** from one **[Agreement](agreement.md)** before purchase (N→1, `SetNull`).

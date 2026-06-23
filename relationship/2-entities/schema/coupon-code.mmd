@@ -1,0 +1,31 @@
+erDiagram
+    USER       o|--o{ COUPON_CODE : "created by (setNull)"
+    PRODUCT    o|--o{ COUPON_CODE : "rewards (setNull)"
+    COUPON_CODE ||--o{ CART : "applied to (setNull)"
+    COUPON_CODE ||--o{ COUPON_PRODUCTS : "scopes products"
+    COUPON_CODE ||--o{ COUPON_CITIES : "scopes cities"
+    COUPON_CODE ||--o{ COUPON_SHOWS : "scopes shows"
+    COUPON_CODE ||--o{ COUPON_AUDIT_LOG : "audited by"
+
+    COUPON_CODE {
+        int id PK
+        string code "e.g. SAVE20; case-insensitive unique partial idx"
+        string description "nullable"
+        enum coupon_type "percentage | fixed | free_product | bogo | ..."
+        enum applicability "array; self_service | salesman"
+        decimal discount_value "nullable; 20.00 = 20% or $20"
+        datetime valid_from "nullable"
+        datetime valid_until "nullable"
+        enum usage_limit_type "nullable; limited | unlimited"
+        int used_count "default 0"
+        int max_usage_count "nullable; cap when limited"
+        boolean can_be_used_once_per_company "default false"
+        int reward_product_id FK "nullable; reward product"
+        int reward_product_quantity "nullable"
+        enum reward_product_type "nullable; free | discounted"
+        int reward_lead_count "nullable; free PPL leads"
+        boolean is_booth_setup_and_cleaning_fees_waived "default false"
+        int created_by FK "nullable; issuing user"
+        enum status "default draft"
+        datetime deleted_at "soft delete"
+    }

@@ -6,6 +6,8 @@ A **Product offered at a specific Show** — the junction of [Shows](shows.md) �
 ## Its neighborhood
 ![ShowProduct ego diagram](ego/show-product.svg)
 
+📋 **Need the columns?** → [ShowProduct schema view](schema/show-product.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A ShowProduct **is offered at** one **[Shows](shows.md)** (N→1, cascade) and **is of** one **[Product](product.md)** (N→1, cascade).
 - A ShowProduct **is added to carts as** many **[CartItems](cart-item.md)** (1→N, `Restrict` from the cart side).

@@ -6,6 +6,8 @@ A **frozen line on an [Order](order.md)** — a price/quantity snapshot taken at
 ## Its neighborhood
 ![OrderItem ego diagram](ego/order-item.svg)
 
+📋 **Need the columns?** → [OrderItem schema view](schema/order-item.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - An OrderItem **is a line of** one **[Order](order.md)** (N→1, cascade).
 - When `item_type = product`, it **references** a **[Product](product.md)** and usually the **[ShowProduct](show-product.md)** it came from (both `SetNull`).

@@ -6,6 +6,8 @@
 ## Its neighborhood
 ![PaymentTransaction ego diagram](ego/payment-transaction.svg)
 
+📋 **Need the columns?** → [PaymentTransaction schema view](schema/payment-transaction.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A PaymentTransaction **pays** one **[Order](order.md)** (N→1, cascade).
 - It **is also linked to** the **[Company](company.md)** directly (N→1, cascade) — denormalized so the charging cron avoids a join.

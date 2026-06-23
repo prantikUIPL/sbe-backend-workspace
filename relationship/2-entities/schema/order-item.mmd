@@ -1,0 +1,24 @@
+erDiagram
+    ORDER             ||--o{ ORDER_ITEM : "contains (cascade)"
+    PRODUCT           o|--o{ ORDER_ITEM : "references (setNull)"
+    SUBSCRIPTION_PLAN o|--o{ ORDER_ITEM : "references (setNull)"
+    PPL_ADDON_PACKAGE o|--o{ ORDER_ITEM : "references (setNull)"
+    SHOW_PRODUCT      o|--o{ ORDER_ITEM : "originated from (setNull)"
+
+    ORDER_ITEM {
+        int id PK
+        int order_id FK "parent order"
+        enum item_type "product | subscription | ppl_addon"
+        int product_id FK "nullable; when item_type=product"
+        int subscription_plan_id FK "nullable; when item_type=subscription"
+        int ppl_addon_package_id FK "nullable; when item_type=ppl_addon"
+        int show_product_id FK "nullable; per-show offering origin"
+        string description "name snapshot at purchase"
+        int quantity "default 1"
+        decimal unit_price "price/unit snapshot"
+        decimal custom_unit_price "nullable; sales override"
+        decimal amount "quantity * effective unit"
+        boolean is_default_included "default false; bundled item"
+        int lead_credits "default 0; PPL credits"
+        datetime created_at
+    }

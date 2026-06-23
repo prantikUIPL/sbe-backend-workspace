@@ -1,0 +1,20 @@
+erDiagram
+    AGREEMENT ||--o{ PRODUCT : "required by (setNull, FK on Product)"
+
+    AGREEMENT {
+        int id PK
+        enum type "ppl_terms_of_use | booth_terms_of_use"
+        string title
+        string description "nullable"
+        string content "nullable; terms body"
+        string version "nullable"
+        string language "default en"
+        boolean is_active "default true"
+        boolean is_default "default false"
+        string file_url "nullable; uploaded doc"
+        string file_name "nullable"
+        string mime_type "nullable"
+        datetime file_last_updated_on "nullable"
+        datetime deleted_at "soft delete"
+        datetime created_at_updated_at "timestamps"
+    }

@@ -6,6 +6,8 @@ A **buyable lead-credit top-up** — a one-time package like "20 leads for $25" 
 ## Its neighborhood
 ![PplAddonPackage ego diagram](ego/ppl-addon-package.svg)
 
+📋 **Need the columns?** → [PplAddonPackage schema view](schema/ppl-addon-package.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A PplAddonPackage **is purchased via** many **[OrderItems](order-item.md)** (1→N, `SetNull` on the item side).
 - That's its only relation — it reaches an [Order](order.md) **only** through OrderItem (when `item_type = ppl_addon`).

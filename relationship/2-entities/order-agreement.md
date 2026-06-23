@@ -6,6 +6,8 @@ The **immutable signature record** for one [Order](order.md): who signed, when, 
 ## Its neighborhood
 ![OrderAgreement ego diagram](ego/order-agreement.svg)
 
+📋 **Need the columns?** → [OrderAgreement schema view](schema/order-agreement.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - An OrderAgreement **belongs to** exactly one **[Order](order.md)** (1→1, unique `order_id`, cascade).
 - It **records a snapshot of** the terms that came from an **[Agreement](agreement.md)** template — but note this is a *value snapshot* (`terms_version`), **not an FK**.

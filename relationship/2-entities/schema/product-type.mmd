@@ -1,0 +1,16 @@
+erDiagram
+    PRODUCT_TYPE             |o--o{ PRODUCT_TYPE : "parent of (self, restrict)"
+    PRODUCT_TYPE             ||--o{ PRODUCT : "main type of (restrict)"
+    PRODUCT_TYPE             ||--o{ PRODUCT : "addon sub-type of (restrict)"
+
+    PRODUCT_TYPE {
+        int id PK
+        string name "VarChar(100)"
+        string code UK "machine code e.g. booth"
+        int parent_type_id FK "nullable; NULL = top-level"
+        int sequence "display order in sibling group"
+        boolean is_active "default true"
+        datetime deleted_at "soft delete"
+        datetime created_at
+        datetime updated_at
+    }

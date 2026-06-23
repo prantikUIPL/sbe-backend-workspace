@@ -6,6 +6,8 @@ The exhibitor **business** — the customer. It's the root of the commercial wor
 ## Its neighborhood
 ![Company ego diagram](ego/company.svg)
 
+📋 **Need the columns?** → [Company schema view](schema/company.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A Company **is logged into through** exactly one **[Exhibitor](exhibitor.md)** account (1→1).
 - A Company **builds** many **[Carts](cart.md)** (1→N).

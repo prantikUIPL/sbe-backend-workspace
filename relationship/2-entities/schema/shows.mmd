@@ -1,0 +1,26 @@
+erDiagram
+    CITY                     |o--o{ SHOWS : "held in (cascade)"
+    SHOW_CLASS               |o--o{ SHOWS : "classified as (cascade)"
+    PRICE_TIER               |o--o{ SHOWS : "priced by (cascade)"
+    SHOWS                    ||--o{ SHOW_PRODUCT : "offers"
+    SHOWS                    ||--o{ ATTENDEE_SHOW : "attended via"
+    SHOWS                    ||--o{ COUPON_SHOWS : "scoped by coupons"
+
+    SHOWS {
+        int id PK
+        string title "VarChar(150)"
+        int city_id FK "nullable"
+        int class_id FK "nullable"
+        int price_tier_id FK "nullable"
+        enum status "active | draft; default draft"
+        date date "nullable"
+        enum show_day "nullable; monday..sunday"
+        time start_time "nullable"
+        time end_time "nullable"
+        boolean date_to_be_added "default false; TBA flag"
+        string venue_xxx "~60 nullable venue/logistics/contact fields"
+        string timezone "nullable"
+        string nunify_event_code "VarChar(36)"
+        string nunify_event_id "VarChar(53)"
+        datetime created_at
+    }

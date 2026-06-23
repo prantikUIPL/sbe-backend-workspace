@@ -6,6 +6,8 @@ The **login account** for a Company — the person who signs in, browses shows, 
 ## Its neighborhood
 ![Exhibitor ego diagram](ego/exhibitor.svg)
 
+📋 **Need the columns?** → [Exhibitor schema view](schema/exhibitor.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - An Exhibitor **belongs to** exactly one **[Company](company.md)** (1→1, cascade).
 - An Exhibitor **can invite** other Exhibitors (self-relation on `invited_by`; `SetNull` so removing the inviter doesn't delete invitees). Each invitee is a **full Exhibitor with its own unique `company_id` → its own Company** — an invite is a *peer referral between separate accounts*, not adding a teammate to the inviter's company.

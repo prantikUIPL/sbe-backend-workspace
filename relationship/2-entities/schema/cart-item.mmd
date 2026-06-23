@@ -1,0 +1,24 @@
+erDiagram
+    CART                             ||--o{ CART_ITEM : "line of (cascade)"
+    PRODUCT                          ||--o{ CART_ITEM : "is of (restrict)"
+    SHOW_PRODUCT                     |o--o{ CART_ITEM : "comes from (restrict)"
+    CART_ITEM                        ||--o{ CART_ITEM : "parent of (cascade)"
+    CART_ITEM                        ||--o{ INVENTORY_RESERVATION : "referenced by"
+
+    CART_ITEM {
+        int id PK
+        int cart_id FK "owner cart"
+        int product_id FK "restrict"
+        int show_product_id FK "nullable; null only for fee lines"
+        int parent_cart_item_id FK "nullable; self (add-on under booth)"
+        enum item_type "booth | addon | sponsorship | fee..."
+        boolean is_default_included "default false; bundled"
+        int quantity "default 1"
+        decimal unit_price "resolved per-unit"
+        decimal custom_unit_price "nullable; override takes precedence"
+        decimal amount "coalesce(custom,unit) x qty"
+        string description "varchar(255); name snapshot"
+        json metadata "nullable; JsonB snapshot"
+        datetime created_at
+        datetime updated_at
+    }

@@ -9,6 +9,8 @@ A **gift-certificate** feature, modelled as **three** tables:
 ## Its neighborhood
 ![GiftCertificate ego diagram](ego/gift-certificate.svg)
 
+📋 **Need the columns?** → [GiftCertificate schema view](schema/gift-certificate.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A GiftCertificate **is sold as** many **GiftCertificatePurchases** (1→N) and **is redeemed as** many **GiftCertificateRedeems** (1→N) — both `Restrict` (you can't delete a template that's been bought/used).
 - A GiftCertificatePurchase **belongs to** a **[Company](company.md)** (N→1, cascade) and **is drawn down by** many redeems (1→N).

@@ -6,6 +6,8 @@ The **billing document** for an [Order](order.md), with dual Stripe + QuickBooks
 ## Its neighborhood
 ![Invoice ego diagram](ego/invoice.svg)
 
+📋 **Need the columns?** → [Invoice schema view](schema/invoice.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - An Invoice **bills** at most one **[Order](order.md)** (N→1, `SetNull`; `order_id` is nullable).
 - An Invoice **is billed to** one **[Company](company.md)** (N→1, cascade).

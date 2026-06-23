@@ -6,6 +6,8 @@ A **show-agnostic marketing/discovery booth listing** — a name, rich descripti
 ## Its neighborhood
 ![UniversalBooth ego diagram](ego/universal-booth.svg)
 
+📋 **Need the columns?** → [UniversalBooth schema view](schema/universal-booth.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A UniversalBooth **has a gallery of** many **UniversalBoothSecondaryImage** rows (1→N, cascade). The main image is a column on the booth itself.
 - That's it — there are **no FKs** to the commerce tables.

@@ -6,6 +6,8 @@ A **mutable proposal/contract** a sales rep (or exhibitor) builds for a Company 
 ## Its neighborhood
 ![Cart ego diagram](ego/cart.svg)
 
+📋 **Need the columns?** → [Cart schema view](schema/cart.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A Cart **belongs to** one **[Company](company.md)** (N→1, cascade).
 - A Cart **may have** an applied **[CouponCode](coupon-code.md)** (N→1, `SetNull`) and an assigned sales-rep **User** (`SetNull`).

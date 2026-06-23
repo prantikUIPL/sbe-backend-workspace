@@ -1,0 +1,31 @@
+erDiagram
+    PRODUCT_TYPE             |o--o{ PRODUCT : "main type (restrict)"
+    PRODUCT_TYPE             |o--o{ PRODUCT : "addon sub-type (restrict)"
+    AGREEMENT                |o--o{ PRODUCT : "requires (setNull)"
+    PRODUCT                  ||--o{ PRODUCT_PRICE_TIER : "priced by"
+    PRODUCT                  ||--o{ PRODUCT_BOOTH_SIZE_PRICE : "size matrix"
+    PRODUCT                  ||--o{ PRODUCT_INCLUDED_ITEM : "bundles (self)"
+    PRODUCT                  ||--o{ PRODUCT_RECOMMENDATION : "recommends (self)"
+    PRODUCT                  ||--o{ SHOW_PRODUCT : "offered at"
+    PRODUCT                  ||--o{ ORDER_ITEM : "ordered as"
+    PRODUCT                  ||--o{ CART_ITEM : "added to cart"
+    PRODUCT                  ||--o{ COUPON_CODE : "scoped by coupon"
+
+    PRODUCT {
+        int id PK
+        string name "VarChar(255); CI-unique on active"
+        string short_name "nullable"
+        string description "nullable, Text"
+        int product_type_id FK "nullable; leaf type"
+        enum price_type "flat | booth_size_based; default flat"
+        decimal custom_amount "nullable; booth fee override"
+        int booth_addon_type_id FK "nullable; addon sub-type"
+        int agreement_id FK "nullable; contract to sign"
+        decimal length_width "nullable; booth dims"
+        int inventory_xxx "4 nullable stock/sales-control fields"
+        boolean booth_required "default false"
+        string notification_xxx "8 toggle + String[] recipient fields"
+        int dynamic_question_form_id "nullable; loose Int, no FK"
+        int dashboard_id "nullable; loose Int, no FK"
+        boolean is_active "default true"
+    }

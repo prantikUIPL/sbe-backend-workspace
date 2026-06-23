@@ -1,0 +1,20 @@
+erDiagram
+    COMPANY              ||--o{ PAYMENT_METHOD : "owned by (cascade)"
+    PAYMENT_METHOD       |o--o{ COMPANY_SUBSCRIPTION : "default for (setNull)"
+
+    PAYMENT_METHOD {
+        int id PK
+        int company_id FK "owner"
+        string stripe_payment_method_id UK "pm_xxx"
+        string stripe_customer_id "cus_xxx"
+        string type "nullable; default card"
+        enum used_for "default Order (PPL | Order)"
+        string cardholder_name "nullable"
+        string brand "nullable; e.g. visa"
+        string last4 "nullable"
+        int exp_month "nullable"
+        int exp_year "nullable"
+        string fingerprint "nullable; dup detect"
+        boolean is_default "default false"
+        datetime deleted_at "soft delete"
+    }

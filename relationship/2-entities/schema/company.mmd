@@ -1,0 +1,29 @@
+erDiagram
+    COMPANY                  ||--o| EXHIBITOR : "owns (1:1, cascade)"
+    COMPANY                  ||--o{ COMPANY_SUBSCRIPTION : "subscribes via (cascade)"
+    COMPANY                  ||--o{ PAYMENT_METHOD : "saves cards (cascade)"
+    COMPANY                  ||--o{ ORDER : "places (cascade)"
+    COMPANY                  ||--o{ INVOICE : "billed by (cascade)"
+    COMPANY                  ||--o{ CART : "shops via (cascade)"
+    COMPANY                  ||--o{ PAYMENT_TRANSACTION : "pays via (cascade)"
+    COMPANY                  ||--o{ LEAD : "receives (cascade)"
+    COMPANY                  ||--o{ GIFT_CERTIFICATE : "buys/redeems (cascade)"
+
+    COMPANY {
+        int id PK
+        string name "VarChar(255)"
+        string company_print_name
+        string address_line_1
+        string address_line_2 "nullable"
+        string city_state_country_zip "geo + 11 contact/social fields"
+        decimal latitude "nullable, Decimal(9,6)"
+        decimal longitude "nullable, Decimal(9,6)"
+        string hubspot_company_id "nullable"
+        boolean status "default true"
+        int lead_balance "default 0; PPL credits"
+        datetime low_balance_notified_at "nullable; dedupe flag"
+        int total_leads_purchased "default 0"
+        enum lead_email_preference "instant | daily_summary | none"
+        enum service_area_type "national | local; default local"
+        datetime created_at
+    }

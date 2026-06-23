@@ -6,6 +6,8 @@ A **promo / discount** the platform issues (percentage off, fixed amount, free p
 ## Its neighborhood
 ![CouponCode ego diagram](ego/coupon-code.svg)
 
+📋 **Need the columns?** → [CouponCode schema view](schema/coupon-code.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A CouponCode **is applied to** many **[Carts](cart.md)** (1→N, `SetNull` — removing a coupon doesn't delete the cart).
 - A CouponCode **is scoped to** shows / products / cities via **CouponShows**, **CouponProducts**, **CouponCities** include/exclude rows (1→N each, cascade).

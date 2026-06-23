@@ -6,6 +6,8 @@ A **Company's live Pay-Per-Lead (PPL) subscription** — which plan they're on, 
 ## Its neighborhood
 ![CompanySubscription ego diagram](ego/company-subscription.svg)
 
+📋 **Need the columns?** → [CompanySubscription schema view](schema/company-subscription.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A CompanySubscription **belongs to** one **[Company](company.md)** (N→1, cascade).
 - It **is on** one **SubscriptionPlan** (N→1, `Restrict` — a plan in use can't be deleted).

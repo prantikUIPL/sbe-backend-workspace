@@ -1,0 +1,38 @@
+erDiagram
+    COMPANY                          ||--o{ CART : "belongs to (cascade)"
+    COUPON_CODE                      |o--o{ CART : "applies (setNull)"
+    USER                             |o--o{ CART : "assigned rep (setNull)"
+    CART                             ||--o{ CART : "parent of (setNull)"
+    CART                             ||--o{ CART_ITEM : "contains"
+    CART                             ||--o{ INVENTORY_RESERVATION : "traced by"
+    CART                             ||--o| ORDER : "converts to (1:1)"
+
+    CART {
+        int id PK
+        string cart_number UK "human ref"
+        int company_id FK "owner"
+        int created_by "polymorphic owner id; NO FK"
+        enum created_by_type "admin | sales | exhibitor (discriminator)"
+        int parent_cart_id FK "nullable; self (Booth Build, deferred)"
+        int coupon_code_id FK "nullable"
+        enum stage "proposal | contract; default contract"
+        enum status "default draft"
+        enum previous_status "nullable; restored on reactivation"
+        string client_xxx "3-field customer contact, nullable"
+        decimal subtotal "default 0; product lines"
+        decimal setup_fees "default 0"
+        decimal cleaning_fees "default 0"
+        decimal discount "default 0; coupon"
+        decimal tax "default 0"
+        decimal total "default 0; max(0, sub+fees-disc+tax)"
+        decimal total_savings "default 0"
+        decimal coupon_amount "default 0; mirror of discount"
+        datetime expiration_date "nullable; reached -> expired"
+        string idempotency_key UK "nullable; de-dupes create"
+        int assigned_sales_rep_id FK "nullable; sales rep"
+        int shared_version "default 0; invalidates shared snapshot"
+        string notes_fields "special/internal/invoice/terms, nullable"
+        datetime deleted_at "soft delete"
+        datetime created_at
+        datetime updated_at
+    }

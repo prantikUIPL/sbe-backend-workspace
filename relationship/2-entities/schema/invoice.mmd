@@ -1,0 +1,26 @@
+erDiagram
+    ORDER                ||--o{ INVOICE : "billed by (setNull, nullable)"
+    COMPANY              ||--o{ INVOICE : "owned by (cascade)"
+    INVOICE              ||--o{ INVOICE_LINE_ITEM : "itemized as (cascade)"
+    INVOICE              ||--o{ PAYMENT_TRANSACTION : "paid by (setNull)"
+    INVOICE              ||--o{ LEAD_TRANSACTION_LOG : "ledgered in"
+    INVOICE              ||--o{ PPL_COMPANY_ACCOUNT_HISTORY : "logged in"
+
+    INVOICE {
+        int id PK
+        int order_id FK "nullable; Stripe sub invoices precede Order"
+        int company_id FK "owner"
+        string invoice_number UK "human ref INV-2026-00001"
+        enum status "default draft"
+        decimal subtotal
+        decimal tax "default 0"
+        decimal total
+        string currency "default usd"
+        string stripe_invoice_id UK "nullable; webhook dedup"
+        string quickbooks_invoice_id "nullable"
+        enum quickbooks_sync_status "default pending"
+        datetime quickbooks_synced_at "nullable"
+        datetime paid_at "nullable"
+        datetime due_date "nullable"
+        datetime deleted_at "soft delete"
+    }

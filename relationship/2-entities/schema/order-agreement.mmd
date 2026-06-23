@@ -1,0 +1,16 @@
+erDiagram
+    ORDER ||--o| ORDER_AGREEMENT : "signed by (1:1, cascade)"
+
+    ORDER_AGREEMENT {
+        int id PK
+        int order_id FK "UNIQUE; one agreement per order"
+        string signer_first_name
+        string signer_last_name
+        string signature_data "base64 image / SVG path"
+        datetime signed_at "default now"
+        boolean terms_accepted "default false"
+        string terms_version "nullable; value snapshot (not FK)"
+        string ip_address "nullable; inet, legal evidence"
+        string user_agent "nullable; browser info"
+        datetime created_at "write-once; immutable by design"
+    }

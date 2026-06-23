@@ -1,0 +1,30 @@
+erDiagram
+    COMPANY                  ||--|| EXHIBITOR : "owned by (1:1, cascade)"
+    EXHIBITOR                |o--o{ EXHIBITOR : "invited by (self, setNull)"
+    USER                     |o--o{ EXHIBITOR : "referred by (setNull)"
+    USER                     |o--o{ EXHIBITOR : "strategist (setNull)"
+    EXHIBITOR                ||--o{ EXHIBITOR_SESSION : "logs in via"
+    EXHIBITOR                ||--o{ EXHIBITOR_TOKEN : "holds tokens"
+    EXHIBITOR                ||--o{ NOTIFICATION_LOG : "notified by"
+    EXHIBITOR                ||--o{ EXHIBITOR_AUDIT_LOG : "audited by"
+
+    EXHIBITOR {
+        int id PK
+        string email UK "VarChar(255)"
+        string password
+        string first_name "nullable"
+        string last_name "nullable"
+        string phone "VarChar(20)"
+        int company_id FK,UK "1:1 with Company"
+        string hubspot_contact_id "nullable"
+        boolean status "default true"
+        int referred_by FK "nullable -> User"
+        int strategist_id FK "nullable -> User"
+        boolean is_first_login "default true"
+        int failed_login_attempts "default 0"
+        datetime lockout_until "nullable"
+        int user_type "SmallInt, default 1"
+        int invited_by FK "nullable; self-ref"
+        string invitation_status "nullable, default pending"
+        datetime deleted_at "soft delete"
+    }

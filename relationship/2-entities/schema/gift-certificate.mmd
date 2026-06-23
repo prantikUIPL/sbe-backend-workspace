@@ -1,0 +1,41 @@
+erDiagram
+    GIFT_CERTIFICATE             ||--o{ GIFT_CERTIFICATE_PURCHASE : "sold as (restrict)"
+    GIFT_CERTIFICATE             ||--o{ GIFT_CERTIFICATE_REDEEM : "redeemed as (restrict)"
+    GIFT_CERTIFICATE_PURCHASE    ||--o{ GIFT_CERTIFICATE_REDEEM : "drawn down by (restrict)"
+    COMPANY                      ||--o{ GIFT_CERTIFICATE_PURCHASE : "bought by (cascade)"
+    COMPANY                      ||--o{ GIFT_CERTIFICATE_REDEEM : "redeemed by (cascade)"
+    ORDER                        ||--o{ GIFT_CERTIFICATE_REDEEM : "applied to (restrict)"
+
+    GIFT_CERTIFICATE {
+        int id PK
+        string name UK "template name"
+        enum status "default inactive (active | inactive)"
+        decimal amount "face value"
+        int validity_in_months "purchase lifetime"
+        datetime created_at
+        datetime updated_at
+    }
+
+    GIFT_CERTIFICATE_PURCHASE {
+        int id PK
+        string uuid UK "char(6); 6-digit code"
+        int gift_certificate_id FK "template (restrict)"
+        decimal amount "purchased face value"
+        decimal remaining_amount "running balance"
+        int company_id FK "buyer (cascade)"
+        datetime expire_at "now + validity_in_months"
+        datetime created_at
+        datetime updated_at
+    }
+
+    GIFT_CERTIFICATE_REDEEM {
+        int id PK
+        int gift_certificate_id FK "template (restrict)"
+        int gift_certificate_purchase_id FK "purchase drawn down (restrict)"
+        int order_id FK "order applied to (restrict)"
+        int company_id FK "redeemer (cascade)"
+        decimal amount "applied this redeem"
+        decimal remaining_amount "purchase balance after"
+        datetime created_at
+        datetime updated_at
+    }

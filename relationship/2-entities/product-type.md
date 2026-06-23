@@ -6,6 +6,8 @@ The **category tree** that classifies Products. It's a self-referential hierarch
 ## Its neighborhood
 ![ProductType ego diagram](ego/product-type.svg)
 
+📋 **Need the columns?** → [ProductType schema view](schema/product-type.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A ProductType **may have** a parent ProductType and many child ProductTypes (self-relation, `Restrict` — you can't delete a type that still has children).
 - A ProductType **types** many **[Products](product.md)** as their main type (1→N).

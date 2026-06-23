@@ -1,0 +1,28 @@
+erDiagram
+    ORDER                ||--o{ PAYMENT_TRANSACTION : "paid by (cascade)"
+    COMPANY              ||--o{ PAYMENT_TRANSACTION : "charged to (cascade, denorm)"
+    INVOICE              |o--o{ PAYMENT_TRANSACTION : "invoiced as (setNull, nullable)"
+
+    PAYMENT_TRANSACTION {
+        int id PK
+        int order_id FK "owner"
+        int company_id FK "denormalized for cron speed"
+        int installment_number "1..N within order"
+        int total_installments "snapshot of installments_count"
+        decimal amount
+        string currency "default usd"
+        enum status "default scheduled"
+        string stripe_payment_intent_id UK "nullable; pi_xxx"
+        string stripe_charge_id "nullable; ch_xxx"
+        string stripe_payment_method_id "pm_xxx; reused off_session"
+        string stripe_customer_id "cus_xxx snapshot"
+        datetime due_date "when cron attempts charge"
+        datetime attempted_at "nullable"
+        datetime paid_at "nullable; set by webhook"
+        string failure_xxx "nullable code + message"
+        int retry_count "default 0; cron stops after 3"
+        datetime next_retry_at "nullable; backoff"
+        int invoice_id FK "nullable; set post-invoice"
+        string idempotency_key UK "Stripe Idempotency-Key"
+        enum source "default checkout"
+    }

@@ -6,6 +6,8 @@
 ## Its neighborhood
 ![CartItem ego diagram](ego/cart-item.svg)
 
+📋 **Need the columns?** → [CartItem schema view](schema/cart-item.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A CartItem **is a line of** one **[Cart](cart.md)** (N→1, cascade — delete the cart, the lines go).
 - A CartItem **is of** one **[Product](product.md)** (N→1, `Restrict`) and usually **comes from** one **[ShowProduct](show-product.md)** (N→1, `Restrict`; null only for synthetic fee lines).

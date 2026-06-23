@@ -6,6 +6,8 @@ A **trade-show event** — a dated thing at a venue, in a city. This is the "eve
 ## Its neighborhood
 ![Shows ego diagram](ego/shows.svg)
 
+📋 **Need the columns?** → [Shows schema view](schema/shows.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A Show **is held in** a **City**, **classified as** a **ShowClass**, and **priced by** a **PriceTier** (each N→1, cascade).
 - A Show **offers products as** many **[ShowProducts](show-product.md)** (1→N) — this is how a catalog Product becomes purchasable at this show.

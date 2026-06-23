@@ -1,0 +1,16 @@
+erDiagram
+    PPL_ADDON_PACKAGE        ||--o{ ORDER_ITEM : "purchased as"
+
+    PPL_ADDON_PACKAGE {
+        int id PK
+        string name "case-insensitive unique on LOWER(name)"
+        int lead_credits "e.g. 5, 20, 50, 100"
+        decimal amount "one-time price"
+        string currency "default usd"
+        string stripe_price_id "nullable; checkout"
+        string stripe_product_id "nullable"
+        int sort_order "default 0; display order"
+        boolean is_active "default true"
+        datetime created_at
+        datetime updated_at
+    }

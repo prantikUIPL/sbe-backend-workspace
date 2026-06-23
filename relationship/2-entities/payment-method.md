@@ -6,6 +6,8 @@ A **saved Stripe card** for a [Company](company.md) (brand, last4, the `pm_xxx` 
 ## Its neighborhood
 ![PaymentMethod ego diagram](ego/payment-method.svg)
 
+📋 **Need the columns?** → [PaymentMethod schema view](schema/payment-method.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - A PaymentMethod **belongs to** one **[Company](company.md)** (N→1, cascade).
 - A PaymentMethod **is used to bill** many **[CompanySubscriptions](company-subscription.md)** (1→N, `SetNull` on the subscription side — deleting a card nulls the link, doesn't delete the subscription).

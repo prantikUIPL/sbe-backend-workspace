@@ -6,6 +6,8 @@ A **versioned legal-terms template** (e.g. `booth_terms_of_use`, `ppl_terms_of_u
 ## Its neighborhood
 ![Agreement ego diagram](ego/agreement.svg)
 
+📋 **Need the columns?** → [Agreement schema view](schema/agreement.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - An Agreement **is required by** many **[Products](product.md)** (1→N; the FK lives on Product as `agreement_id`, `SetNull`).
 - When someone signs, the accepted terms are **captured as** an **[OrderAgreement](order-agreement.md)** — conceptually the "signed copy", though there is **no FK** between them (only a `terms_version` snapshot).

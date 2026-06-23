@@ -1,0 +1,15 @@
+erDiagram
+    UNIVERSAL_BOOTH                  ||--o{ UNIVERSAL_BOOTH_SECONDARY_IMAGE : "gallery of (cascade)"
+
+    UNIVERSAL_BOOTH {
+        int id PK
+        string name "varchar(150)"
+        string description "rich-text HTML"
+        string main_image_url "varchar(500)"
+        string video_url "nullable"
+        int created_by "nullable; admin user, NO FK"
+        int updated_by "nullable; admin user, NO FK"
+        datetime deleted_at "soft delete"
+        datetime created_at
+        datetime updated_at
+    }
