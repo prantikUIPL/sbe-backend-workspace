@@ -6,6 +6,8 @@ A **confirmed purchase** — the transactional hub of the whole system. Everythi
 ## Its neighborhood
 ![Order ego diagram](ego/order.svg)
 
+📋 **Need the columns?** → [Order schema view](schema/order.md) (typed fields + data dictionary)
+
 ## Relationships, read as sentences
 - An Order **belongs to** exactly one **[Company](company.md)** (N→1, cascade).
 - An Order **is born from** at most one **[Cart](cart.md)** (1→1, `SetNull`) — or none, for subscription orders.

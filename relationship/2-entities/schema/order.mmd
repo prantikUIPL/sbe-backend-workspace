@@ -1,0 +1,33 @@
+erDiagram
+    COMPANY                  ||--o{ ORDER : "places (cascade)"
+    COMPANY_SUBSCRIPTION     |o--o{ ORDER : "renews via (setNull)"
+    CART                     |o--o| ORDER : "converts to (setNull, unique)"
+    USER                     |o--o{ ORDER : "sold by (restrict)"
+    ORDER                    ||--o{ ORDER_ITEM : "contains"
+    ORDER                    ||--o| ORDER_AGREEMENT : "signed by (1:1)"
+    ORDER                    ||--o{ INVOICE : "billed by"
+    ORDER                    ||--o{ PAYMENT_TRANSACTION : "paid by"
+    ORDER                    ||--o{ GIFT_CERTIFICATE_REDEEM : "redeemed against"
+    ORDER                    ||--o{ INVENTORY_RESERVATION : "consumes stock"
+
+    ORDER {
+        int id PK
+        string order_number UK "human ref"
+        int company_id FK "owner"
+        int company_subscription_id FK "nullable; subscription/renewal orders"
+        enum order_type "subscription | ppl_addon | product"
+        enum status "default pending"
+        int cart_id FK "nullable, UNIQUE; product orders only"
+        int sales_person_id FK "nullable"
+        decimal subtotal
+        decimal coupon_amount "default 0"
+        decimal tax
+        decimal total
+        enum payment_mode "full | split"
+        int installments_count "default 1"
+        decimal paid_amount "running sum of succeeded txns"
+        decimal total_savings
+        string billing_xxx "11-field checkout snapshot"
+        string stripe_payment_intent_id UK "nullable"
+        datetime deleted_at "soft delete"
+    }
