@@ -1,6 +1,6 @@
 # PaymentMethod — schema view
 
-> Detailed schema for the **[PaymentMethod](../payment-method.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:889`](../../../admin-backend-api/prisma/schema.prisma#L889) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[PaymentMethod](../payment-method.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:963`](../../../admin-backend-api/prisma/schema.prisma#L963) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![PaymentMethod schema diagram](payment-method.svg)

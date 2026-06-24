@@ -1,6 +1,6 @@
 # CouponCode — schema view
 
-> Detailed schema for the **[CouponCode](../coupon-code.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1587`](../../../admin-backend-api/prisma/schema.prisma#L1587) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[CouponCode](../coupon-code.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1662`](../../../admin-backend-api/prisma/schema.prisma#L1662) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![CouponCode schema diagram](coupon-code.svg)

@@ -28,12 +28,13 @@ Plus a **worked example** (Level 1): one concrete scenario narrated end-to-end i
 
 And when you *do* need the columns, the **schema view** (Level 2½) pairs a focused, typed ER diagram with a **data dictionary** (every column: type, key, nullability, plain-English meaning) — the most-recommended human-readable schema device. It lives behind a 📋 link on each card so the card stays about the *mental model*, not the column list. Each schema view links back to the authoritative `schema.prisma` line.
 
-## The 20 entity cards
+## The 22 entity cards
 
 Headline entities (the ones you asked about) **in bold**; the rest are their direct neighbors, included so nothing in a diagram is left unexplained.
 
-- **Actors:** [Company](2-entities/company.md) · [Exhibitor](2-entities/exhibitor.md)
+- **Actors:** [Company](2-entities/company.md) · [Company Micropage](2-entities/company-micropage.md) *(the company's public CMS page)* · [Exhibitor](2-entities/exhibitor.md)
 - **Catalog & event:** [Shows](2-entities/shows.md) *(the event)* · [ProductType](2-entities/product-type.md) · [Product](2-entities/product.md) *(booth/pavilion/sponsorship/add-on)* · [ShowProduct](2-entities/show-product.md) · [UniversalBooth](2-entities/universal-booth.md)
+- **Company × Show:** [OnsiteBoothContact](2-entities/onsite-booth-contact.md) *(who staffs a company's booth at a given show)*
 - **Buying:** [Cart](2-entities/cart.md) · [CartItem](2-entities/cart-item.md) · [CouponCode](2-entities/coupon-code.md)
 - **The deal:** **[Order](2-entities/order.md)** · [OrderItem](2-entities/order-item.md) · [OrderAgreement](2-entities/order-agreement.md) · [Agreement](2-entities/agreement.md)
 - **Money:** [Invoice](2-entities/invoice.md) · [PaymentTransaction](2-entities/payment-transaction.md) · [PaymentMethod](2-entities/payment-method.md)
@@ -44,6 +45,7 @@ Headline entities (the ones you asked about) **in bold**; the rest are their dir
 1. **Booth, Pavilion, Sponsorship, Add-on are all one `Product` table** — separated only by `ProductType`. There are no separate "booth" or "sponsorship" tables.
 2. **A Product isn't sellable until it's a `ShowProduct`** — the per-show offering with price and stock. That's what carts and orders reference.
 3. **`UniversalBooth` is *not* part of ordering** — it's a standalone marketing/discovery catalog with a photo gallery, wired to nothing in the commerce flow.
+4. **The "Company Micropage" is *not* one table** — it's CMS columns on `Company` plus two child tables (`CompanyService`, `CompanyTestimonialVideo`). And the `OnsiteBoothContact` (the booth staffer at a show) is a separate row keyed by company × show — don't confuse it with the company's own contact columns.
 
 ## Regenerating the diagrams
 

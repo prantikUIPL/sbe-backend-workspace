@@ -1,6 +1,6 @@
 # Product — schema view
 
-> Detailed schema for the **[Product](../product.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1111`](../../../admin-backend-api/prisma/schema.prisma#L1111) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[Product](../product.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1185`](../../../admin-backend-api/prisma/schema.prisma#L1185) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![Product schema diagram](product.svg)
@@ -34,7 +34,7 @@
 | `notification_product_purchased_emails` / `..._phone_numbers` / `notification_low_inventory_emails` | text[] | — | no | Recipient lists; default `[]` |
 | `disclaimer_text` | varchar(500) | — | yes | Purchase-time disclaimer |
 | `disclaimer_external_url` | varchar(500) | — | yes | Disclaimer link; http/https CHECK |
-| `dynamic_question_form_id` | int | — | yes | Loose Int, **no FK** — future Dynamic Question Forms module |
+| `dynamic_question_form_id` | int | FK→DynamicForm | yes | Dynamic Question form binding — `ProductDynamicQuestionForm` (setNull) |
 | `duplicate_answers_allowed` | boolean | — | yes | Per-instance vs reused answers |
 | `auto_notification_reminder` | boolean | — | yes | Auto reminder flag for dynamic question |
 | `dashboard_id` | int | — | yes | Loose Int, **no FK** — future Dashboard module |
@@ -48,6 +48,7 @@
 | [ProductType](../product-type.md) (productType) | N→1 (opt) | Restrict | Main product type |
 | [ProductType](../product-type.md) (boothAddonType) | N→1 (opt) | Restrict | Booth Add-on sub-type |
 | [Agreement](../agreement.md) | N→1 (opt) | SetNull | Required contract |
+| DynamicForm (dynamicQuestionForm) | N→1 (opt) | SetNull | Dynamic Question form head (self-contained DynamicForm sub-system) |
 | [OrderItem](../order-item.md) | 1→N | — | Ordered line items |
 | ProductPriceTier | 1→N | — | Flat per-tier pricing |
 | ProductBoothSizePrice | 1→N | — | Booth size×tier matrix (`AddonBoothSizeMatrix`); also referenced by `BoothSizeReferenceProduct` |

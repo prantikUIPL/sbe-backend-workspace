@@ -1,6 +1,6 @@
 # Agreement — schema view
 
-> Detailed schema for the **[Agreement](../agreement.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:314`](../../../admin-backend-api/prisma/schema.prisma#L314) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[Agreement](../agreement.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:338`](../../../admin-backend-api/prisma/schema.prisma#L338) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![Agreement schema diagram](agreement.svg)

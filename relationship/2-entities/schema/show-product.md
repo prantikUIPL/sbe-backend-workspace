@@ -1,6 +1,6 @@
 # ShowProduct — schema view
 
-> Detailed schema for the **[ShowProduct](../show-product.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:2524`](../../../admin-backend-api/prisma/schema.prisma#L2524) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[ShowProduct](../show-product.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:2628`](../../../admin-backend-api/prisma/schema.prisma#L2628) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![ShowProduct schema diagram](show-product.svg)

@@ -1,0 +1,14 @@
+erDiagram
+    COMPANY ||--o{ ONSITE_BOOTH_CONTACT : "sets (cascade)"
+    SHOWS   ||--o{ ONSITE_BOOTH_CONTACT : "per show (cascade)"
+
+    ONSITE_BOOTH_CONTACT {
+        int id PK
+        int company_id FK
+        int show_id FK
+        string contact_name "VarChar(255)"
+        string contact_email "VarChar(255)"
+        string contact_phone "VarChar(20)"
+        datetime created_at
+        datetime updated_at
+    }

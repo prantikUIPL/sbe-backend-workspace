@@ -1,0 +1,24 @@
+erDiagram
+    COMPANY ||--o{ COMPANY_SERVICE : "lists (cascade)"
+    COMPANY ||--o{ COMPANY_TESTIMONIAL_VIDEO : "shows (cascade)"
+
+    COMPANY_SERVICE {
+        int id PK
+        int company_id FK "-> Company (cascade)"
+        string title "VarChar(255)"
+        string description "Text"
+        int display_order "default 0"
+        datetime created_at
+        datetime updated_at
+    }
+
+    COMPANY_TESTIMONIAL_VIDEO {
+        int id PK
+        int company_id FK "-> Company (cascade)"
+        string title "nullable, VarChar(255)"
+        string video_url "VarChar(255)"
+        string thumbnail_url "nullable, VarChar(255)"
+        int display_order "default 0"
+        datetime created_at
+        datetime updated_at
+    }

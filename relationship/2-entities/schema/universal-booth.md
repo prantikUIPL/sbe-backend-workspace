@@ -1,6 +1,6 @@
 # UniversalBooth — schema view
 
-> Detailed schema for the **[UniversalBooth](../universal-booth.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1421`](../../../admin-backend-api/prisma/schema.prisma#L1421) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[UniversalBooth](../universal-booth.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1495`](../../../admin-backend-api/prisma/schema.prisma#L1495) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![UniversalBooth schema diagram](universal-booth.svg)

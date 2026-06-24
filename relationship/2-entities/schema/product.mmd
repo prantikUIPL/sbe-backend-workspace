@@ -10,6 +10,7 @@ erDiagram
     PRODUCT                  ||--o{ ORDER_ITEM : "ordered as"
     PRODUCT                  ||--o{ CART_ITEM : "added to cart"
     PRODUCT                  ||--o{ COUPON_CODE : "scoped by coupon"
+    PRODUCT                  }o--o| DYNAMIC_FORM : "questionnaire (setNull)"
 
     PRODUCT {
         int id PK
@@ -25,7 +26,7 @@ erDiagram
         int inventory_xxx "4 nullable stock/sales-control fields"
         boolean booth_required "default false"
         string notification_xxx "8 toggle + String[] recipient fields"
-        int dynamic_question_form_id "nullable; loose Int, no FK"
+        int dynamic_question_form_id FK "nullable; dynamic question form"
         int dashboard_id "nullable; loose Int, no FK"
         boolean is_active "default true"
     }

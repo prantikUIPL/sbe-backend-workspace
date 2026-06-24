@@ -1,6 +1,6 @@
 # Exhibitor — schema view
 
-> Detailed schema for the **[Exhibitor](../exhibitor.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:913`](../../../admin-backend-api/prisma/schema.prisma#L913) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[Exhibitor](../exhibitor.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:987`](../../../admin-backend-api/prisma/schema.prisma#L987) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![Exhibitor schema diagram](exhibitor.svg)

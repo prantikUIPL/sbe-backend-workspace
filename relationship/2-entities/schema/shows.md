@@ -1,6 +1,6 @@
 # Shows — schema view
 
-> Detailed schema for the **[Shows](../shows.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:2259`](../../../admin-backend-api/prisma/schema.prisma#L2259) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[Shows](../shows.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:2360`](../../../admin-backend-api/prisma/schema.prisma#L2360) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![Shows schema diagram](shows.svg)
@@ -39,9 +39,10 @@
 | City | N→1 (opt) | Cascade | Hosting city |
 | ShowClass | N→1 (opt) | Cascade | Show class |
 | PriceTier | N→1 (opt) | Cascade | Pricing tier |
-| [ShowProduct](../show-product.md) | 1→N | — | Products offered at this show |
-| AttendeeShow | 1→N | — | Attendee registrations |
-| CouponShows | 1→N | — | Coupons scoped to this show |
+| [ShowProduct](../show-product.md) | 1→N | Cascade | Products offered at this show |
+| AttendeeShow | 1→N | Cascade | Attendee registrations |
+| CouponShows | 1→N | Cascade | Coupons scoped to this show |
+| [OnsiteBoothContact](../onsite-booth-contact.md) | 1→N | Cascade | Per-exhibitor onsite booth contact (one per Company at this show) |
 
 ## Indexes
 Primary key on `id`; composite unique on `(city_id, title)` (one show title per city).

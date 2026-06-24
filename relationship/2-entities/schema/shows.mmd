@@ -2,9 +2,10 @@ erDiagram
     CITY                     |o--o{ SHOWS : "held in (cascade)"
     SHOW_CLASS               |o--o{ SHOWS : "classified as (cascade)"
     PRICE_TIER               |o--o{ SHOWS : "priced by (cascade)"
-    SHOWS                    ||--o{ SHOW_PRODUCT : "offers"
-    SHOWS                    ||--o{ ATTENDEE_SHOW : "attended via"
-    SHOWS                    ||--o{ COUPON_SHOWS : "scoped by coupons"
+    SHOWS                    ||--o{ SHOW_PRODUCT : "offers (cascade)"
+    SHOWS                    ||--o{ ATTENDEE_SHOW : "attended via (cascade)"
+    SHOWS                    ||--o{ COUPON_SHOWS : "scoped by coupons (cascade)"
+    SHOWS                    ||--o{ ONSITE_BOOTH_CONTACT : "onsite contact per exhibitor (cascade)"
 
     SHOWS {
         int id PK

@@ -8,6 +8,9 @@ erDiagram
     COMPANY                  ||--o{ PAYMENT_TRANSACTION : "pays via (cascade)"
     COMPANY                  ||--o{ LEAD : "receives (cascade)"
     COMPANY                  ||--o{ GIFT_CERTIFICATE : "buys/redeems (cascade)"
+    COMPANY                  ||--o{ ONSITE_BOOTH_CONTACT : "onsite contact per show (cascade)"
+    COMPANY                  ||--o{ COMPANY_SERVICE : "micropage services (cascade)"
+    COMPANY                  ||--o{ COMPANY_TESTIMONIAL_VIDEO : "micropage videos (cascade)"
 
     COMPANY {
         int id PK
@@ -18,6 +21,8 @@ erDiagram
         string city_state_country_zip "geo + 11 contact/social fields"
         decimal latitude "nullable, Decimal(9,6)"
         decimal longitude "nullable, Decimal(9,6)"
+        string cover_image "nullable; micropage hero, NULL => default img"
+        string medallion_certification_number "nullable, UNIQUE; micropage cert"
         string hubspot_company_id "nullable"
         boolean status "default true"
         int lead_balance "default 0; PPL credits"

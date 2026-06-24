@@ -12,7 +12,7 @@ The company wants a booth at an upcoming **[Shows](../2-entities/shows.md)** —
 
 The booth itself lives in the catalog as a **[Product](../2-entities/product.md)**. Here is the first thing that trips people up: a "booth", a "pavilion", a "sponsorship", and an "add-on" are **all just Products** — the only difference is their **[ProductType](../2-entities/product-type.md)**.
 
-A Product on its own isn't purchasable. It becomes buyable only when it's attached to a specific show as a **[ShowProduct](../2-entities/show-product.md)** — that's the booth *at this show*, with this show's price and stock count.
+A Product on its own isn't purchasable. It becomes buyable only when it's attached to a specific show as a **[ShowProduct](../2-entities/show-product.md)** — that's the booth *at this show*, with this show's price and stock count. (A Product may also carry a **DynamicForm** questionnaire via `dynamic_question_form_id`, to collect booth-specific answers from the buyer.)
 
 > *(Separately, there's a **[UniversalBooth](../2-entities/universal-booth.md)** catalog — pretty marketing listings with photo galleries. It helps people browse booth styles but is **not** connected to ordering. Don't confuse it with Product.)*
 
@@ -31,6 +31,8 @@ At signature, three things happen together:
 - The signature is captured as an **[OrderAgreement](../2-entities/order-agreement.md)** — an *immutable* record of who signed, when, their IP, and which terms version. Those terms came from an **[Agreement](../2-entities/agreement.md)** template that the Product required.
 - Each cart line is frozen into an **[OrderItem](../2-entities/order-item.md)** — a price/quantity snapshot, so later catalog changes never rewrite history.
 - Stock is drawn down: an inventory reservation ties the order to the ShowProduct's available count.
+
+With the booth booked, onboarding asks the exhibitor for an on-site point of contact for that show — captured as an **OnsiteBoothContact** (name, email, phone), exactly one per company + show.
 
 ## 4. Billing and getting paid
 

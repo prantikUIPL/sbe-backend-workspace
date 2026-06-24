@@ -1,0 +1,12 @@
+flowchart LR
+    COMPANY(["Company (owns micropage)"])
+    CS["CompanyService"]
+    CTV["CompanyTestimonialVideo"]
+
+    COMPANY -->|"lists services (1→N)"| CS
+    COMPANY -->|"shows testimonials (1→N)"| CTV
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class COMPANY ego;
+    class CS,CTV neighbor;

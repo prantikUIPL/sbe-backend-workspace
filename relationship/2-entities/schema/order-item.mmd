@@ -4,6 +4,7 @@ erDiagram
     SUBSCRIPTION_PLAN o|--o{ ORDER_ITEM : "references (setNull)"
     PPL_ADDON_PACKAGE o|--o{ ORDER_ITEM : "references (setNull)"
     SHOW_PRODUCT      o|--o{ ORDER_ITEM : "originated from (setNull)"
+    ORDER_ITEM        ||--o{ ORDER_ITEM : "nests (setNull)"
 
     ORDER_ITEM {
         int id PK
@@ -13,6 +14,7 @@ erDiagram
         int subscription_plan_id FK "nullable; when item_type=subscription"
         int ppl_addon_package_id FK "nullable; when item_type=ppl_addon"
         int show_product_id FK "nullable; per-show offering origin"
+        int parent_order_item_id FK "nullable; nests under parent line"
         string description "name snapshot at purchase"
         int quantity "default 1"
         decimal unit_price "price/unit snapshot"

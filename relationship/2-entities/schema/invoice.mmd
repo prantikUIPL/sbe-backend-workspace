@@ -2,6 +2,7 @@ erDiagram
     ORDER                ||--o{ INVOICE : "billed by (setNull, nullable)"
     COMPANY              ||--o{ INVOICE : "owned by (cascade)"
     INVOICE              ||--o{ INVOICE_LINE_ITEM : "itemized as (cascade)"
+    INVOICE_LINE_ITEM    ||--o{ INVOICE_LINE_ITEM : "nests (setNull)"
     INVOICE              ||--o{ PAYMENT_TRANSACTION : "paid by (setNull)"
     INVOICE              ||--o{ LEAD_TRANSACTION_LOG : "ledgered in"
     INVOICE              ||--o{ PPL_COMPANY_ACCOUNT_HISTORY : "logged in"

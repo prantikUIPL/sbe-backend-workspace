@@ -1,6 +1,6 @@
 # Company — schema view
 
-> Detailed schema for the **[Company](../company.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:779`](../../../admin-backend-api/prisma/schema.prisma#L779) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[Company](../company.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:804`](../../../admin-backend-api/prisma/schema.prisma#L804) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![Company schema diagram](company.svg)
@@ -24,7 +24,19 @@
 | `company_bio` | text | — | yes | Free-form bio |
 | `company_logo` | varchar(255) | — | yes | Logo path/URL |
 | `company_website` | varchar(255) | — | yes | Website URL |
-| `company_twitter` … `company_tiktok` | varchar(255) | — | yes | **7-field** social links (twitter, linkedin, instagram, facebook, youtube, tiktok) |
+| `company_twitter` … `company_tiktok` | varchar(255) | — | yes | **6-field** social links (twitter, linkedin, instagram, facebook, youtube, tiktok) |
+| **— micropage / CMS profile —** | | | | *Scalar fields below are columns on Company; list content lives in `CompanyService` / `CompanyTestimonialVideo`* |
+| `cover_image` | varchar(255) | — | yes | Cover/hero image URL; NULL ⇒ CMS shows a default generic image (frontend fallback) |
+| `company_video_url` | varchar(255) | — | yes | Single promo/intro video |
+| `offer_title` | varchar(255) | — | yes | Attendee offer title (single offer per company) |
+| `offer_description` | text | — | yes | Attendee offer description |
+| `offer_discount_percent` | decimal(5,2) | — | yes | Discount % (0-100) |
+| `offer_link` | varchar(255) | — | yes | Link to the offer page |
+| `medallion_certification_number` | varchar(50) | **U** | yes | Auto-generated cert number embedded in the medallion; `@unique` |
+| `medallion_url` | varchar(255) | — | yes | Generated medallion image URL (downloadable + shown on CMS page) |
+| `medallion_generated_at` | timestamptz | — | yes | When the medallion/cert was issued |
+| `profile_completed_at` | timestamptz | — | yes | Marks profile step done; supports the "Step 2 of 3" progress indicator |
+| **— end micropage —** | | | | |
 | `hubspot_company_id` | varchar(50) | — | yes | HubSpot CRM id |
 | `admin_account_history_note` | text | — | yes | Admin-side account note |
 | `status` | boolean | — | no | Active flag; default `true` |
@@ -50,11 +62,14 @@
 | LeadTransactionLog | 1→N | Cascade | Lead credit ledger |
 | CompanyIndustry / CompanyCategory | 1→N | Cascade | Industry/category mappings |
 | CompanyStripeAccount / CompanyZipCode | 1→N | Cascade | Stripe accounts, service zips |
+| OnsiteBoothContact | 1→N | Cascade | Onsite booth contact per show (`@@unique(company_id, show_id)`) |
+| CompanyService | 1→N | Cascade | CMS micropage services (ordered) |
+| CompanyTestimonialVideo | 1→N | Cascade | CMS micropage testimonial videos (ordered) |
 
 *Also linked (supporting): `CategoryCompanyLog`, `CompanyLeadEmail`, `PaygMonthlySpend`, `RetentionOfferRedemption`, `PPLCompanyAccountHistory`.*
 
 ## Indexes
-Primary key on `id`. (No additional `@@index` / `@@unique` declared on the model — uniqueness lives on the child side, e.g. `Exhibitor.company_id` is `@unique`.)
+Primary key on `id`. No table-level `@@index` / `@@unique` declared on the model, but `medallion_certification_number` carries a column-level `@unique` (one cert number per company, globally unique). Other uniqueness lives on the child side, e.g. `Exhibitor.company_id` is `@unique`.
 
 ---
 *Regenerate diagram: `mmdc -i company.mmd -o company.svg -b white -p pptr.json -c mermaid-config.json`*

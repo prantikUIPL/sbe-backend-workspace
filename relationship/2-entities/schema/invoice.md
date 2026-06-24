@@ -1,6 +1,6 @@
 # Invoice — schema view
 
-> Detailed schema for the **[Invoice](../invoice.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1873`](../../../admin-backend-api/prisma/schema.prisma#L1873) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[Invoice](../invoice.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1953`](../../../admin-backend-api/prisma/schema.prisma#L1953) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![Invoice schema diagram](invoice.svg)
@@ -33,7 +33,7 @@
 |---|---|---|---|
 | [Order](order.md) | N→1 (opt) | SetNull | Billed order; null for pre-order subscription invoices |
 | [Company](company.md) | N→1 | Cascade | Owner |
-| InvoiceLineItem | 1→N | Cascade | Itemized lines |
+| InvoiceLineItem | 1→N | Cascade | Itemized lines — each tagged with an `invoice_item_type` enum and able to nest under a parent line via `parent_invoice_line_item_id` (self-relation `InvoiceLineItemTree`, SetNull) |
 | [PaymentTransaction](payment-transaction.md) | 1→N | SetNull (from txn) | Installment charges linked to this invoice |
 | LeadTransactionLog | 1→N | — | PPL lead ledger entries |
 | PPLCompanyAccountHistory | 1→N | — | PPL account-history entries |

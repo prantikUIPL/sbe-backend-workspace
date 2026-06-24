@@ -1,6 +1,6 @@
 # Cart — schema view
 
-> Detailed schema for the **[Cart](../cart.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:2625`](../../../admin-backend-api/prisma/schema.prisma#L2625) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[Cart](../cart.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:2751`](../../../admin-backend-api/prisma/schema.prisma#L2751) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![Cart schema diagram](cart.svg)

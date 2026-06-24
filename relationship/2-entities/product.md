@@ -14,11 +14,13 @@ The **reusable catalog item** — a booth, workshop pavilion, sponsorship, or ad
 - A Product **is offered at shows as** many **[ShowProducts](show-product.md)** (1→N).
 - A Product **is priced by** flat tiers (`ProductPriceTier`) or by booth-size (`ProductBoothSizePrice`) (1→N).
 - A Product **is added to carts as** many **[CartItems](cart-item.md)** (`Restrict`) and **ordered as** many **[OrderItems](order-item.md)** (`SetNull`).
+- A Product **may attach a dynamic question form** — a configurable questionnaire (the DynamicForm family) linked via `dynamic_question_form_id` (N→1, `SetNull`).
 
 ## Why it matters / gotchas
 - **A Product is not purchasable on its own** — it must be attached to a [Shows](shows.md) via [ShowProduct](show-product.md) to get a price and stock.
 - Booth dimensions/fees and "booth details" live as **columns here** (`length`, `width`, `booth_setup_fee_enabled`, `custom_amount`), not in a separate table.
 - `price_type` is `flat` or `booth_size_based` — that decides which pricing table applies.
+- The **DynamicForm family** (`DynamicForm` → `DynamicFormElement` → `Option`/`Validation`/`Condition`; submissions in `DynamicFormSubmission`/`DynamicFormSubmissionData`; enums `form_element_type`/`form_condition_action`/`form_submission_status`) is a **self-contained sub-system** — Product only references the form *head* via `dynamic_question_form_id`.
 
 ## Next
 [ProductType](product-type.md) · [ShowProduct](show-product.md) · [Agreement](agreement.md)

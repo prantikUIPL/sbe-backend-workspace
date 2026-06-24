@@ -1,6 +1,6 @@
 # ProductType — schema view
 
-> Detailed schema for the **[ProductType](../product-type.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1260`](../../../admin-backend-api/prisma/schema.prisma#L1260) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[ProductType](../product-type.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1334`](../../../admin-backend-api/prisma/schema.prisma#L1334) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![ProductType schema diagram](product-type.svg)

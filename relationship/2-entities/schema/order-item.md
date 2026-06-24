@@ -1,6 +1,6 @@
 # OrderItem — schema view
 
-> Detailed schema for the **[OrderItem](../order-item.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1844`](../../../admin-backend-api/prisma/schema.prisma#L1844) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[OrderItem](../order-item.md)** entity. The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:1919`](../../../admin-backend-api/prisma/schema.prisma#L1919) (`admin-backend-api` — source of truth).
 
 ## Diagram (entity + typed columns + relations)
 ![OrderItem schema diagram](order-item.svg)
@@ -17,6 +17,7 @@
 | `subscription_plan_id` | int | FK→SubscriptionPlan | yes | Set when `item_type = subscription` (setNull) |
 | `ppl_addon_package_id` | int | FK→PplAddonPackage | yes | Set when `item_type = ppl_addon` (setNull) |
 | `show_product_id` | int | FK→ShowProduct | yes | Per-show offering this line came from (cart-originated product orders) (setNull) |
+| `parent_order_item_id` | int | FK→OrderItem (self) | yes | Parent line this row nests under — add-on/fee lines group under their booth line (setNull) |
 | `description` | varchar(255) | — | no | Snapshot of item name at time of purchase |
 | `quantity` | int | — | no | Default 1 |
 | `unit_price` | decimal(10,2) | — | no | Price per unit at purchase (snapshot) |
@@ -34,11 +35,12 @@
 | SubscriptionPlan | N→1 (opt) | SetNull | Subscription plan target (`item_type = subscription`) |
 | [PplAddonPackage](../ppl-addon-package.md) | N→1 (opt) | SetNull | Add-on package target (`item_type = ppl_addon`) |
 | [ShowProduct](../show-product.md) | N→1 (opt) | SetNull | Per-show offering origin |
+| [OrderItem](../order-item.md) (self) | N→1 (opt) / 1→N | SetNull | Self-relation `OrderItemTree`: add-on/fee lines nest under their parent booth line |
 
 *Exactly one of `product_id` / `subscription_plan_id` / `ppl_addon_package_id` is set per row — `item_type` is the discriminator. All catalog FKs are `SetNull`, so deleting a catalog row never deletes order history; the `description` / `unit_price` / `amount` snapshot survives.*
 
 ## Indexes
-`order_id` — no unique constraints.
+`order_id`, `parent_order_item_id` — no unique constraints.
 
 ---
 *Regenerate diagram: `mmdc -i order-item.mmd -o order-item.svg -b white -p pptr.json -c mermaid-config.json`*

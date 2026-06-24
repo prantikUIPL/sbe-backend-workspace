@@ -1,6 +1,6 @@
 # GiftCertificate (+ Purchase + Redeem) — schema view
 
-> Detailed schema for the **[GiftCertificate](../gift-certificate.md)** trio (template + purchase + redeem). The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:2408`](../../../admin-backend-api/prisma/schema.prisma#L2408) (`admin-backend-api` — source of truth).
+> Detailed schema for the **[GiftCertificate](../gift-certificate.md)** trio (template + purchase + redeem). The card has the mental model; this is the column-level reference. Authoritative source: [`schema.prisma:2512`](../../../admin-backend-api/prisma/schema.prisma#L2512) (`admin-backend-api` — source of truth).
 
 ## Diagram (entities + typed columns + relations)
 ![GiftCertificate schema diagram](gift-certificate.svg)
@@ -9,7 +9,7 @@
 
 ## Data dictionary
 
-### GiftCertificate (`gift_certificates`, [L2408](../../../admin-backend-api/prisma/schema.prisma#L2408))
+### GiftCertificate (`gift_certificates`, [L2512](../../../admin-backend-api/prisma/schema.prisma#L2512))
 The reusable **template**.
 
 | Column | Type | Key | Null | Meaning |
@@ -21,7 +21,7 @@ The reusable **template**.
 | `validity_in_months` | int | — | no | Lifetime applied to each purchase's expiry |
 | `created_at` / `updated_at` | timestamptz | — | no | Timestamps |
 
-### GiftCertificatePurchase (`gift_certificate_purchases`, [L2424](../../../admin-backend-api/prisma/schema.prisma#L2424))
+### GiftCertificatePurchase (`gift_certificate_purchases`, [L2528](../../../admin-backend-api/prisma/schema.prisma#L2528))
 An **instance** a Company bought, with a drawable balance.
 
 | Column | Type | Key | Null | Meaning |
@@ -35,7 +35,7 @@ An **instance** a Company bought, with a drawable balance.
 | `expire_at` | timestamptz | — | no | `created_at + validity_in_months` |
 | `created_at` / `updated_at` | timestamptz | — | no | Timestamps |
 
-### GiftCertificateRedeem (`gift_certificate_redeems`, [L2443](../../../admin-backend-api/prisma/schema.prisma#L2443))
+### GiftCertificateRedeem (`gift_certificate_redeems`, [L2547](../../../admin-backend-api/prisma/schema.prisma#L2547))
 Applying part of a purchase's balance to an **Order**.
 
 | Column | Type | Key | Null | Meaning |

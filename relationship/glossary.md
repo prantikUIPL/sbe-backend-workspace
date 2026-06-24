@@ -8,6 +8,9 @@ The 30-second orientation. Read this first; it tells you which words are real ta
 |---|---|
 | **Company** | The exhibitor business that buys everything — the root that almost every commercial record hangs off. |
 | **Exhibitor** | The login account for a Company (one per company); the person who signs in and checks out. |
+| **OnsiteBoothContact** | The on-site point-of-contact (name/email/phone) a Company sets for a given Show — exactly one per company+show. |
+| **CompanyService** | A service line on a Company's public micropage (title + description, ordered) — one of many. |
+| **CompanyTestimonialVideo** | A testimonial video on a Company's public micropage (URL + thumbnail, ordered) — one of many. |
 | **Shows** | A trade-show *event* — a dated venue where booths and add-ons are sold. ("Show" = event.) |
 | **ProductType** | The category tree that says whether a Product is a Booth, Workshop Pavilion, Sponsorship, or Add-on. |
 | **Product** | The reusable catalog item (a booth, pavilion, sponsorship, or add-on) — *what* can be sold, before it is tied to a show. |
@@ -40,6 +43,11 @@ The single biggest source of newcomer confusion: a business word that is **not**
 | **Booth details** | Fields on `Product` (dimensions, fees) + size pricing in `ProductBoothSizePrice` / `BoothSizeBasedShowProductPrices` + photos in `UniversalBoothSecondaryImage`. |
 | **Transactions** | `PaymentTransaction`. |
 | **Booth setup / cleaning fees** | Toggles on `Product`; snapshot amounts frozen onto `Order.setup_fees` / `cleaning_fees`. |
+| **Onsite booth contact** | An `OnsiteBoothContact` row (one per company+show). |
+| **Company micropage / profile page** | Columns on `Company` (cover image, bio, video, socials) + child rows in `CompanyService` and `CompanyTestimonialVideo` — **not** one dedicated page table. |
+| **Medallion / certification** | `Company.medallion_*` columns (`medallion_certification_number`, `medallion_url`, `medallion_generated_at`) — a column set, not a table. |
+| **Attendee offer** | `Company.offer_*` columns (`offer_title`, `offer_description`, `offer_discount_percent`, `offer_link`) — a single offer per company, not a table. |
+| **Booth question form / questionnaire** | The `DynamicForm` family (form + elements + submissions), linked from `Product.dynamic_question_form_id`. |
 
 ### The one idea to remember first
 
