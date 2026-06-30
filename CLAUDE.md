@@ -29,3 +29,25 @@ All five repos live in Bitbucket workspace `unified-dev-cls-a` and run Pipelines
 - `./scripts/check-pipelines.sh <repo> --logs <build#>` — dump failed-step logs (where SonarQube failures appear)
 
 Auth: a scoped **Atlassian API token** (basic auth, `email:token`) read from gitignored `scripts/.bitbucket-creds` (`BB_EMAIL` + `BB_API_TOKEN`) or matching env vars. Used on demand to verify builds and triage SonarQube quality-gate failures.
+
+The pipeline steps run in order: **Secret scan (gitleaks)** → **Lint, typecheck, and test** → **SonarQube scan and quality gate**. A later step shows `NOT_RUN` when an earlier one fails, so always confirm *which* step actually failed before assuming SonarQube.
+
+## SonarQube
+
+Self-hosted **SonarQube Community Edition** at `https://sonar.techbreeze.in`. Community has **no per-branch / per-PR analysis** — every scan overwrites a single main project, so only the *latest* analysis is queryable (no historical PR snapshots). Each repo's `sonar.projectKey` is in its `sonar-project.properties`.
+
+Read gate status and issues with `scripts/check-sonar.sh` (auth: `SONAR_HOST_URL` + `SONAR_TOKEN` user token in gitignored `scripts/.sonar-creds`):
+
+- `./scripts/check-sonar.sh` — quality gate for all 5 repos
+- `./scripts/check-sonar.sh <repo> --issues` — open **new-code** issues + hotspots, each tagged with its SonarQube author (git-blame email)
+
+**SonarQube is READ-ONLY** — never write to it (no marking hotspots reviewed, no changing issue status/gates).
+
+### When a code push trips SonarQube
+
+1. **Check the pipeline first** (`check-pipelines.sh <repo> --logs <build#>`) to confirm the failure was the **SonarQube quality gate** — not gitleaks or lint/test.
+2. If SonarQube: look at **new-code issues only** (`check-sonar.sh <repo> --issues`).
+3. For each, **verify it's from our change** (cross-check the author / `git blame` on the file+line). Only fix issues introduced by our own code.
+4. **Do not touch issues introduced by someone else.**
+
+All fixes are proposed for the user to review and commit (no auto-commit/push).
