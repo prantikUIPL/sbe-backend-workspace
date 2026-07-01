@@ -2,6 +2,13 @@
 
 Generalizes the 13.1→13.2 insight across all stories: **build the owner once; the rest comes (largely) for free.** For each cluster: the story to build first, the single shared build unit, and the *residual delta* each dependent still needs.
 
+> **Two views in this doc.** The clusters below answer *"what shared build unit does a story
+> reuse."* The final section — **[Inter-Story & Cross-Epic Dependencies](#inter-story--cross-epic-dependencies-blockers-sequencing-external-providers)** —
+> answers the inverse: *"what must ship elsewhere before a requirement can be delivered"*
+> (cross-epic blockers with Jira/sprint status, plus requirements that turned out already-delivered
+> or not-deliverable). It also **reconciles** cluster assumptions that later analysis changed.
+> Source of truth remains each story's feasibility `.md`.
+
 
 ## Order Management
 
@@ -240,4 +247,49 @@ Generalizes the 13.1→13.2 insight across all stories: **build the owner once; 
 - **Members:**
     - `13.2` [13.2-k] _(owner)_ — shares-logic; **residual:** Owner of the 'Total Amount comes from billing' rule on the listing row — specifically the per-order Order.total figure.
     - `13.3` [13.3-n, 13.3-o, 13.3-z] — shares-logic; **residual:** These are DIFFERENT fields from 13.2-k's Order.total: 13.3-n = total_savings, 13.3-o = paid_amount (Total Paid), 13.3-z = full reconciliation across subtotal/fees/savings/total-paid. Only the 'read from the Order record, do not recompute' principle is shared — the breakdown, the distinct fields and the reconciliation check are all genuine separate work, not redundant.
+
+
+## Inter-Story & Cross-Epic Dependencies (blockers, sequencing, external providers)
+
+Complements the build-consolidation clusters above. Where the clusters answer *"what shared build
+unit does this story reuse,"* this section answers *"what must ship elsewhere before this story's
+requirement can be delivered"* — cross-epic blockers (with Jira/sprint status) and requirements
+that turned out already-delivered or not-deliverable. **Source of truth remains each story's
+feasibility `.md`; keep the Jira/sprint status rows current.**
+
+**Status legend:** ✅ available · 🔵 Blocked (a real story would unblock) · ⛔ Not Deliverable (no data/story) · ⁇ open question · 🔗 already delivered / reuse.
+
+_Last updated 2026-07-01 from the 13.3 Order Details analysis; OM Epic-24 dependency rows marked ⁇ are feasibility-level only, not yet deep-analyzed._
+
+### Order History ↔ Order Management
+
+| Consumer (story · req) | Depends on | Provider (story · Jira) | Status | Notes |
+|---|---|---|---|---|
+| **13.3-t** Payment Schedule | salesperson plan **written + linked to Order**, then shown to exhibitor | OM **24.8 Payment Plan Management** (producers SBE-1109/1111/1112, In Progress **SBE Sprint 5**); exhibitor visibility [SBE-1154](https://unifiedinfotech.atlassian.net/browse/SBE-1154) (backlog/To Do, Prantik Saha) | 🔵 | `CartPaymentScheduleEntry`/`CartPaymentPlan` is cart-only, **not linked to an Order** — the real blocker. Option (b): `/payments/checkout` split already writes a per-installment schedule in `PaymentTransaction` (deliverable now). SBE-1132 "Payment Plan Management" → 24.8. |
+| **13.3** Order Details aggregate | shared order-aggregation shape + PaymentTransaction projection | OM **24.6 Order Details** (admin) | ⁇ | Both aggregate one order; overlaps OM-C13 (installment projection). Confirm reuse when 24.6 is analyzed. |
+| **13.2 / 13.3** lifecycle display (canceled/refunded/paid_amount) | admin **write-side** that mutates order state | OM **24.9** Refund, **24.10** Cancel, **24.12** Booth Release, **24.13** Move-Show (see OM-C2/C3/C12) | ⁇ | OH is read-only and *reflects* states these OM stories write. Not a build blocker; OH display correctness depends on their field semantics. |
+
+### External-epic blockers gating Order History
+
+| Consumer (req) | Depends on | Provider (story / Jira) | Status | Notes |
+|---|---|---|---|---|
+| **13.3-l** Gift Certificate line | redemption producer (write `GiftCertificateRedeem`) | Story **12.4 "Gift Cart Redemption"** — [Exhibitor Store App](https://unifiedinfotech.atlassian.net/wiki/spaces/SBE/pages/3858137106/SBE+-+Exhibitor+Store+Application) (search "Gift Cart Redemption"); [SBE-1069](https://unifiedinfotech.atlassian.net/browse/SBE-1069) (Epic, To Do, unassigned) | 🔵 | Zero producer today; omit line via conditional display until 12.4 ships. |
+| **13.3-g** Booth Upgrade details | upgrade captured/linked on the order | **"Booth Upgrade"** story — [Exhibitor Store App](https://unifiedinfotech.atlassian.net/wiki/spaces/SBE/pages/3858137106/SBE+-+Exhibitor+Store+Application) (search "Booth Upgrade" / "Upgrade Booth") | 🔵 | Upgrades modelled as fresh purchases of the price difference; no upgrade detail on the original order. |
+| **13.3-c** Booth Number | stall-number assignment source, order-joined | none found. Lead: **"Booth Sign Print Page"** — [Admin Panel Page 2](https://unifiedinfotech.atlassian.net/wiki/spaces/SBE/pages/3984654414/SBE+-+Admin+Panel+Page+2) (company+show level, not order) | ⛔ | Assigned externally after purchase (`notification-template.seeder.ts:668`); no schema column, no order link. |
+| **13.3-f** Booth Type (Std/Premium/Corner) | booth-type classification attribute | no story; data absent (`ProductType` = family only) | ⛔ | Classification doesn't exist anywhere. Open question: required, or BA artifact? |
+| **13.3-w** Onsite Contact | `OnsiteBoothContact` populated **and** order-linked | **[SBE-1169 "View Onsite Boot Contact"](https://unifiedinfotech.atlassian.net/browse/SBE-1169)** (To Do, **Sprint 5**, Ritam) + producer **[SBE-1165 "Onsite Booth Contacts Management"](https://unifiedinfotech.atlassian.net/browse/SBE-1165)** (backlog, Manish); Edit SBE-1171 (Sprint 5). Confluence: [Exhibitor Store App](https://unifiedinfotech.atlassian.net/wiki/spaces/SBE/pages/3858137106/SBE+-+Exhibitor+Store+Application) | 🔵 | No producer today; keyed `(company_id, show_id)` with no Order FK. The Confluence Edit story intends **per-order** onsite contact, so those stories add the producer **and** the order-linkage. |
+
+### Already-delivered / reuse — reconciles cluster assumptions
+
+| Story · req | Reuse target (already built) | Status | Notes |
+|---|---|---|---|
+| **13.3-v / -ac** (agreement half) | `GET /agreement/signed/:orderId/download` (`agreement.controller.ts:154` → `buildSignedBoothContractDocx`) | 🔵 confirm | Composed terms+signature DOCX endpoint **exists in code** (ownership-scoped) — this **corrects** the feasibility "Partial" verdict and the OH-C3 note "no composed agreement document is generated." BUT **Blocked pending team confirmation of completion**: the code was **authored by Kshitiz** (git blame — controller route merged to dev, service still changing Jun 29) under [SBE-862 Exhibitor Agreement & Checkout Review](https://unifiedinfotech.atlassian.net/browse/SBE-862) / [SBE-869 Signed Agreement Storage](https://unifiedinfotech.atlassian.net/browse/SBE-869) (both In Progress, active **SBE Sprint 5**) — confirm completion with him. Separately [SBE-1158 "Download Agreement Option"](https://unifiedinfotech.atlassian.net/browse/SBE-1158) (Prantik, backlog/To Do, not started) may be **superseded** by that work — reconcile with the team. Reuses the existing endpoint (no new `/orders/:orderId/agreement` route). Caveat: DOCX not PDF. |
+| **13.2 / 13.3-s** Invoice PDF | **deferred by both** — no product-order renderer (pdfkit `ppl.service` is subscription/Invoice-shaped) | 🔵/⁇ | **Updates OH-C3:** the invoice endpoint was NOT built with 13.2 (deferred pending A-vs-B: generate from `Order`+`OrderItems` vs serve persisted `Invoice` rows). 13.3 also defers. Open decision inherited. |
+| **13.3** booth section | `purchased-booths.service.ts` (Jira SBE-1174 / SBE-1065 "Upcoming Purchased Booths and Sponsorship") | 🔗 | Existing `Order → orderItems(booth) → product/showProduct → show` join; mirror it, don't re-derive. |
+| **13.3** read derivations | 13.2 orders module (`deriveOrderPaymentStatus`/`deriveIsOverdue`/`deriveCanPay`/`buildOrderShows`) | 🔗 | See OH-C5; 13.3 adds `GET /orders/:orderId` to the same module. |
+
+### Maintenance
+- Update the Jira/sprint status cells when tickets move; keep Confluence citations as **link + heading to search** (no bare page ids).
+- When an OM Epic-24 story is deep-analyzed, replace its ⁇ rows with verified dependencies.
+- This section lives outside the GDrive-synced `order_history/` & `order_management/` folders, so it is dev-facing only.
 
