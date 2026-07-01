@@ -1,89 +1,110 @@
-# Story Doc Format Updates (implementation-status additions)
+# Story Doc Format (feasibility `.md` + `.xlsx`)
 
-During the SBE-1146 / Story 13.2 (Order Listing) session, the story's feasibility
-docs (`.md` + `.xlsx`) were extended beyond the original per-story feasibility
-format to track **implementation status** and **resolved/deferred decisions**. The
-sibling stories (13.1, 13.3, and the Order Management stories) still use the
-**baseline** format. This file is the spec for bringing any other story's docs up to
-the **13.2 (extended)** format — apply it as stories move from *analysis* into
-*implementation*.
+The spec for a story's feasibility docs (`.md` + `.xlsx`). The **canonical** format is
+the one produced during **Phase 1 (Finalize scope with the human)** of
+**[STORY_IMPLEMENTATION_PROCESS.md](STORY_IMPLEMENTATION_PROCESS.md)** — evolved from the
+13.2 (Order Listing) session and finalized in the 13.3 (Order Details) scope session.
+**13.3 is the reference example.**
 
 > The `<Story> - Implementation Plan.md` is NOT part of this — it has its own schema
-> (Plan File Schema v1.8.2) and is left as-is.
+> (Plan File Schema v1.8.2) and is produced/owned by Phase 2 of the process doc.
 
 ---
 
-## Baseline format (13.1 / 13.3 / OM stories)
+## Verdict vocabulary
 
-**`.md` sections:** `# Story X — Title`, `**Epic:**`, `**Confluence:**`,
-`**Build Status:**`, `## Summary`, `## Feasibility Counts`, `## Requirements`,
-`## Endpoints`, `## Open Questions`, `## Cross-Epic Dependencies`,
+Every requirement carries exactly one verdict:
+
+- **Deliverable** — confirmed buildable on existing code, no open dependency. (The plan
+  is scoped to these only.)
+- **Deferred** — buildable, but a decision has been postponed (e.g. an A-vs-B choice).
+- **Blocked** — waiting on an identified owning story; **cite it** (story # + Jira key +
+  sprint + assignee).
+- **Not Deliverable** — no data *and* no owning story (parked open question).
+- **Resolved** — a decision was made → the item becomes **Deliverable**; the decision is
+  recorded in the **Requirements row** and the item is **dropped from Open Questions**.
+
+Rule: **an item with no Open Questions entry is fully Deliverable.** (The legacy
+`Partial` / `Out of Scope` verdicts usually reclassify into the above after Phase 1.)
+
+---
+
+## `.md` sections
+
+`# Story X — Title`, `**Epic:**`, `**Confluence:**`, `**Build Status:**` (counts +
+confirmed build scope), `## Summary`, `## Feasibility Counts`, `## Implementation Status`,
+`## Requirements`, `## Endpoints`, `## Open Questions`, `## Cross-Epic Dependencies`,
 `## Build Consolidation Notes`.
 
-**`.xlsx` sheets:** `Overview`, `Requirements`, `Endpoints`, `Open Questions`,
-`Cross-Epic Dependencies`.
-- `Requirements` columns (11): `Req ID, Requirement, Verdict, Build Focus, Delivered By, Reason (exists vs to-build / gap), Code Evidence, Dependency, Build Consolidation (reuse / delivered-by), Story Wording (verbatim, from Confluence), Confluence`.
-- `Open Questions` columns (2): `#, Open Question`.
+- **Feasibility Counts** table columns: `Deliverable | Deferred | Blocked | Not Deliverable | Partial | Out of Scope | Total`, followed by a one-line list of the confirmed build scope (the Deliverable req ids).
+- **Open Questions** — the centralized action register: **one entry per non-Deliverable
+  requirement** (see below). Resolved items are not kept here.
+- **Implementation Status** — lifecycle-only (see below).
 
----
+## `.xlsx` sheets
 
-## Extended format (what 13.2 now has) — apply these deltas
+`Overview`, `Requirements`, `Endpoints`, `Open Questions`, `Cross-Epic Dependencies`,
+`Implementation Status`.
 
-### A. `.md` additions
+### `Requirements` sheet
+Columns: `Req ID | Requirement | Verdict | Build Focus | Delivered By | Reason (exists vs
+to-build / gap) | Code Evidence | Dependency | Build Consolidation (reuse / delivered-by)
+| Story Wording (verbatim, from Confluence) | Confluence | Impl Status (YYYY-MM-DD)`.
+- The **Verdict** and **Dependency** cells carry the Phase-1 decision (Dependency = the
+  blocking story + Jira key for Blocked items).
+- **Resolved** decisions are recorded here (in Reason / Impl Status), **not** in Open Questions.
 
-1. **`**Implementation:**` line** — directly under `**Build Status:**`. One line:
-   *N of M in-scope requirements shipped in `SBE-XXXX`; remaining item(s) + status.*
-2. **`## Implementation Status (as of YYYY-MM-DD)` section** — placed just before
-   `## Requirements`. Contains:
-   - **Branch / commits / PR** line (branch name, commit SHAs, PR number, Swagger tag).
-   - A **per-requirement status table**: `| Req | Status | Notes |` with
-     ✅ Done / ⚠️ Partial / ⛔ Deferred / Out of Scope per requirement.
-   - **Remaining in story** — numbered list of not-yet-built items + why (e.g. deferred
-     pending a decision).
-   - **Team decisions still open (no code until answered)** — bullets.
-   - **Dependencies owned by other stories** — bullets (with owning story id).
-   - A closing note on what is out of API scope (e.g. front-end wiring).
-3. **Open Questions upgrade** — prefix each question with a status tag
-   (`[RESOLVED YYYY-MM-DD]` / `[OPEN — for team discussion]` /
-   `[OPEN — for team confirmation · WORK DEFERRED]`) and add a
-   `- **Decision:**` / `- **Current direction (date):**` sub-bullet.
-4. **`## Deferred Work` section** (only if the story defers a requirement) —
-   what's deferred, why, and the decision that unblocks it.
+### `Open Questions` sheet — the centralized action register
+**One row per non-Deliverable requirement.** Columns (8):
+`Req | Item | Verdict | Open Question / What is needed | Dependency (blocking story +
+Jira) | Assignee | Sprint / Jira status | Decision / Current direction`.
+- **Styling:** workbook header style (bold white font on `1F4E78` fill, wrapped, row 1
+  frozen at `A2`), data cells wrap-text + top-aligned, thin borders.
+- **Verdict color-code** on the Verdict column: Not-Deliverable light red (`F8CBAD`),
+  Blocked amber (`FFE699`), Deferred light blue (`DDEBF7`).
+- **Resolved items are NOT here** — their decision lives in the Requirements row.
 
-### B. `.xlsx` additions
+### `Implementation Status` sheet — lifecycle only
+Two columns `Section | Detail` (bold header, col A ~48 / col B ~90, wrap). Rows:
+`Status | Branch | SBE ticket | Commits | PR | Swagger tag | Build gates | Live smoke |
+Confirmed build scope | Remaining | Not ready — see Open Questions | External
+dependencies — see Cross-Epic Dependencies | Out of API scope`.
+- It **points at** Open Questions (blockers/decisions) and Cross-Epic Dependencies
+  (external producers) instead of duplicating them. For an unbuilt story it is mostly
+  "Not started" + empty branch/PR placeholders; it fills in as you build (Phase 9).
 
-1. **`Requirements` sheet** — append one column: **`Impl Status (YYYY-MM-DD)`**
-   (✅ Done (SBE-XXXX) / ⚠️ Partial / ⛔ DEFERRED / Out of Scope per row). Width ~46,
-   wrap text, copy header style from the existing header cell.
-2. **`Open Questions` sheet** — append two columns: **`Status`** and
-   **`Resolution / Decision`**.
-3. **New `Implementation Status` sheet** — two columns `Section | Detail` (bold header,
-   col A ~30 / col B ~100, wrap). Rows: *Shipped (SBE-XXXX)*, *Remaining — <req>*,
-   one *Open decision — …* row per open decision, one *Dependency — <story>* row per
-   dependency, *Out of API scope*.
-4. **`Overview` sheet** — append summary rows: `Implementation`, `Impl Branch`,
-   `Impl Commits`, `PR`.
+### `Cross-Epic Dependencies` sheet
+`Dependency | Needed For | Owner (story + Jira)` — external producers a story waits on.
+Kept as its own sheet: it is the **dependency-angle** view, while Open Questions is the
+**item-angle** view of the same blockers.
 
-### Reference openpyxl snippet (append the Requirements column + new sheet)
+### `Overview` sheet
+Metadata (Story ID / Title / Epic) + verdict counts (Deliverable / Deferred / Blocked /
+Not Deliverable / Partial / Out of Scope / Total) + Build Status + Summary + lifecycle
+fields (Implementation / Impl Branch / Impl Commits / PR).
+
+### Reference openpyxl snippet (Open Questions register style + verdict color-code)
 
 ```python
 import openpyxl
-from copy import copy
-from openpyxl.styles import Font, Alignment
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 wb = openpyxl.load_workbook(XLSX)
-ws = wb['Requirements']
-col = ws.max_column + 1
-src = ws.cell(1, 1)
-h = ws.cell(1, col, 'Impl Status (YYYY-MM-DD)')
-h.font, h.fill, h.alignment, h.border = copy(src.font), copy(src.fill), copy(src.alignment), copy(src.border)
+ws = wb['Open Questions']                       # header + rows already written
+HFILL = PatternFill('solid', fgColor='FF1F4E78'); HFONT = Font(bold=True, color='FFFFFFFF')
+THIN = Side(style='thin', color='FFBFBFBF'); BORD = Border(THIN, THIN, THIN, THIN)
+VFILL = {'Not Deliverable': 'FFF8CBAD', 'Blocked': 'FFFFE699', 'Deferred': 'FFDDEBF7'}
+for c in range(1, ws.max_column + 1):
+    h = ws.cell(1, c); h.font, h.fill, h.border = HFONT, HFILL, BORD
+    h.alignment = Alignment(wrap_text=True, vertical='center', horizontal='center')
+ws.freeze_panes = 'A2'
 for r in range(2, ws.max_row + 1):
-    rid = str(ws.cell(r, 1).value).strip()          # map by Req ID, not row order
-    ws.cell(r, col, STATUS[rid]).alignment = Alignment(wrap_text=True, vertical='top')
-ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 46
-
-imp = wb.create_sheet('Implementation Status')       # Section | Detail
-# … write rows, set widths 30 / 100, bold header …
+    for c in range(1, ws.max_column + 1):
+        cell = ws.cell(r, c); cell.border = BORD
+        cell.alignment = Alignment(wrap_text=True, vertical='top', horizontal='left')
+    v = str(ws.cell(r, 3).value or '')          # color-code the Verdict cell
+    for k, rgb in VFILL.items():
+        if v.startswith(k): ws.cell(r, 3).fill = PatternFill('solid', fgColor=rgb)
 wb.save(XLSX)
 ```
 
@@ -91,12 +112,13 @@ wb.save(XLSX)
 
 ## Applying to another story
 
-1. Confirm the story is entering implementation (has a shipped/partial build).
-2. Apply the `.md` additions (A) and `.xlsx` additions (B), mapping each requirement's
-   status by **Req ID** (never by row position).
-3. Keep `Impl Status` wording consistent: `✅ Done (SBE-XXXX)` /
-   `⚠️ Partial (SBE-XXXX) — <what's partial>` / `⛔ DEFERRED — <blocker>` /
-   `Out of Scope — <owner>`.
-4. Commit in the workspace/docs repo with a descriptive scope, e.g.
-   `docs(<epic>): record <story> implementation status`.
-5. Do **not** touch that story's `- Implementation Plan.md`.
+1. Do it as **Phase 1 (scope finalization)** of the process doc — per-item, with the human.
+2. Map each requirement's status by **Req ID** (never by row position).
+3. Open Questions = one row per non-Deliverable item; **Resolved** decisions go to the
+   Requirements row (not Open Questions).
+4. Recompute Feasibility Counts (incl. the **Deferred** column); slim Implementation Status
+   to lifecycle-only; keep Cross-Epic Dependencies.
+5. Commit in the workspace/docs repo with a descriptive scope, e.g.
+   `docs(<epic>): rework <story> feasibility after per-item verdict review`. Stage **only**
+   that story's files — don't let Google-Drive/Sheets sync churn in sibling stories ride along.
+6. Do **not** touch that story's `- Implementation Plan.md`.
