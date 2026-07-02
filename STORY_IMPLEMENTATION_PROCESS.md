@@ -53,6 +53,20 @@ CI-to-green** session; use it as the default workflow for other stories.
 
 ## Step 1 — Finalize each requirement's status with the human (one at a time) — HARD GATE
 
+**Step 1.0 — Confluence sync check (do this before the walkthrough):** fetch the
+story's section from the authoritative Confluence page (the epic's reference page)
+and diff it against the feasibility doc's Requirements table:
+
+- Every System-Spec / Design-Spec / Acceptance-Criteria line maps to a requirement
+  row (**nothing missing**), every row traces back to Confluence wording (**nothing
+  invented**), and the **Story Wording (verbatim)** column still matches the live
+  page — Confluence may have been edited since the feasibility pass.
+- **On drift:** surface the delta to the human before confirming any verdicts;
+  fold the agreed corrections into the feasibility docs as part of Step 2.
+- Also pull the story's **Jira ticket** (status, assignee, description) at this
+  point — it is an input (see above) and its description, when present, must not
+  contradict the Confluence spec.
+
 Using the feasibility docs, **review the requirements with the human one at a time**.
 Do not move to the next requirement until the human has confirmed a status for the
 current one. Walk **every open question** and **every requirement** — don't assume a
@@ -215,6 +229,9 @@ branch / commits / PR / pipeline #). Follow
 
 ## Definition of done (per story)
 
+- [ ] **Feasibility docs verified in sync with the live Confluence story** (Step 1.0) —
+      nothing missing, nothing invented, verbatim wording current; drift reconciled
+      with the human.
 - [ ] **Every requirement's status confirmed with the human, one at a time** (Step 1);
       Deliverable / Deferred / Blocked / Not-Deliverable / Resolved, with blocking
       stories cited.
