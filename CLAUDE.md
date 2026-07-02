@@ -12,6 +12,10 @@ Five NestJS backends sharing one PostgreSQL database. Each sub-folder is its own
 
 All five have `prisma/schema.prisma`. When out of sync, **`admin-backend-api` is the source of truth** — it owns migrations (`prisma/migrations/`) and seeding; the other four use `db push` only.
 
+## Domain model: Order types & `cart_id`
+
+By design an `order_type = product` order always has a `cart_id` (born from a Cart); it is null only for `subscription`/`ppl_addon`.
+
 ## Scripts
 
 Branch management in `scripts/` (sync-dev, create feature branch, rebase onto dev).
