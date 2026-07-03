@@ -2,7 +2,9 @@
 atom_id: OM-P1
 title: Order Management Phase-1 Release (7 stories, ship-together)
 version: v1
-status: draft
+status: approved
+approved_by: Prantik Saha
+approved_at: 2026-07-03
 type: implementation
 sessions: 7
 session: 1
@@ -19,7 +21,9 @@ tracker_ref: https://unifiedinfotech.atlassian.net/browse/SBE-1078
 regulated_workload: false
 ---
 
-# OM-P1 Implementation Plan — Order Management Phase-1 Release (v1 — Draft)
+# OM-P1 Implementation Plan — Order Management Phase-1 Release (v1 — Approved)
+
+**Revision log:** v1 draft 2026-07-03 → approved by Prantik Saha 2026-07-03 (no content changes requested at review).
 
 **Scope:** 7 phases on ONE branch, one release. Phase 1: 24.9 Refunds (SBE-1133) · Phase 2: 24.10 Cancellation (SBE-1134) · Phase 3: 24.11 Cancel/Refund Emails (SBE-1135) · Phase 4: 24.8 Payment Plans (SBE-1132) · Phase 5: 24.7 Payments View (SBE-1131) · Phase 6: 24.6 Order Details (SBE-1130) · Phase 7: 24.15 Payment Reminders (SBE-1139).
 
