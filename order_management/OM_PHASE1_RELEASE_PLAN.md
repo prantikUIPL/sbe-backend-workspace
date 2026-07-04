@@ -276,6 +276,7 @@ Every new route: JWT + RolesGuard + `@Permissions()` key per the ledger allocati
 - Pipelines green ×5: gitleaks → lint/typecheck/test → SonarQube (confirm which step failed before blaming Sonar)
 - SonarQube: 0 new-code issues authored by us (fix only ours — standing rule); **duplication gate clean (P-D8)**
 - Fresh-DB migrate + seed idempotent; `db push` mirrors diff-clean vs admin schema
+- **Swagger/DTO annotations complete for every new or changed route** (each phase that adds/changes an API surface): `@ApiOperation` + success + error responses on the route, `@ApiParam`/`@ApiQuery` matching the live contract (incl. id-encryption param names), and `@ApiProperty` on every request/response DTO field. Repos with no API-surface change this phase are exempt (record "no surface" rather than skipping silently).
 
 ## Verification
 
