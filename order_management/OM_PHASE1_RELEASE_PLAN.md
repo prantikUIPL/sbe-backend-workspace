@@ -25,7 +25,7 @@ regulated_workload: false
 
 **Revision log:** v1 draft 2026-07-03 → approved by Prantik Saha 2026-07-03 (no content changes requested at review).
 
-**Scope:** 7 phases on ONE branch, one release. Phase 1: 24.9 Refunds (SBE-1133) · Phase 2: 24.10 Cancellation (SBE-1134) · Phase 3: 24.11 Cancel/Refund Emails (SBE-1135) · Phase 4: 24.8 Payment Plans (SBE-1132) · Phase 5: 24.7 Payments View (SBE-1131) · Phase 6: 24.6 Order Details (SBE-1130) · Phase 7: 24.15 Payment Reminders (SBE-1139).
+**Scope:** 7 build phases on ONE branch, one release, + a Phase 8 delivery audit at close-out. Phase 1: 24.9 Refunds (SBE-1133) · Phase 2: 24.10 Cancellation (SBE-1134) · Phase 3: 24.11 Cancel/Refund Emails (SBE-1135) · Phase 4: 24.8 Payment Plans (SBE-1132) · Phase 5: 24.7 Payments View (SBE-1131) · Phase 6: 24.6 Order Details (SBE-1130) · Phase 7: 24.15 Payment Reminders (SBE-1139) · Phase 8: Delivery Audit (deliverable-in → delivered-out reconciliation).
 
 **Source:** the seven gate-locked feasibility docs (commits d2d4b98, 156b9e5, c230730, 17578f3, f0d9864, fce7b74, a782d37) + `OM_PHASE1_SHARED_UNIT_LEDGER.md` (U1–U20 + rules 1–7). The story docs are the per-requirement spec; the ledger is the ownership contract; this plan is the build sequence. Where this plan and a story doc disagree, the story doc wins and this plan gets amended.
 
@@ -233,6 +233,20 @@ All design decisions were made and locked at the 2026-07-03 gates and live in th
 | 7.4 | worker: `POST manual-trigger/payment-reminders/run` (dev-only) | 24.15-h |
 | 7.5 | File the scheduling-register hand-off note (OQ-4) — scheduling register ONLY | 24.15 D4 |
 | **Gate** | Simulated clock run: upcoming fires at window, overdue repeats at interval w/ dedupe, stops on Paid (4.5) and Void (6.5); card rows never selected; spec tests green | |
+
+---
+
+### Phase 8 — Delivery Audit (release close-out; runs AFTER Phase 7)
+
+**Why (added 2026-07-05):** the Phase-4 `MILESTONE_STATUS_LABELS` drift — build brief said "per D1" but didn't inline D1's exact strings, so 24.8 shipped enum literals (`Scheduled/Failed/Canceled`) that survived 24.8's + 24.7's reviews/smokes and only surfaced in Phase 6 (24.6-q/z name the exact sheet labels), fixed in the one shared place (`25ac20a` process lesson in the ledger). A single systematic audit at release end guarantees this class of loss/drift is caught by construction, not by luck. **Placement = after Phase 7 (not 6):** the release scope is all 7 stories, drift is cross-story (lived in 24.8, invisible through 24.7), and 24.15 doesn't consume the C13 mapper so nothing compounds by waiting one phase → one pass covers the complete delivered surface. **Read-only until Prantik approves any fix.**
+
+| Step | What | Notes |
+|---|---|---|
+| 8.1 | Per-story requirement trace (fan-out, 1 auditor/story): for every row marked **Deliverable** / **Partial** in each story's plan-time feasibility `.xlsx`/`.md`, confirm a concrete MERGED artifact delivers it — route, service method, DTO field, permission key, migration column. Classify each: **verified / lost** (Deliverable with no landing spot) / **drifted** (delivered but contradicts the spec's exact wording, e.g. the labels). | Baseline = feasibility docs as they stood at plan kickoff; compare against dev tip |
+| 8.2 | Shared-unit conformance: check EVERY consumer of each shared unit (U10/C13 `mapInstallmentRow`, `deriveOrderStatusDisplay`, derived Paid/Unpaid, permission seeds) against the ledger's authoritative spec — the exact failure mode that bit us | Uses `OM_PHASE1_SHARED_UNIT_LEDGER.md` as source of truth |
+| 8.3 | Scope-creep / silent-change check: anything delivered that was NOT in the plan, or a verdict silently flipped from OutOfScope/Blocked/NotDeliverable without a recorded decision | |
+| 8.4 | Adversarial critic pass ("what's missing / what drifted") over 8.1–8.3 findings, then synthesis into a reconciliation report: per-story Deliverable count → verified / lost / drifted, plus a prioritized fix list | Multi-agent: fan-out auditors → adversarial verify → synthesis |
+| **Gate** | Reconciliation report delivered to Prantik; every plan-time Deliverable is either verified-delivered or has an approved fix item; zero unexplained drift/loss. Fixes (if any) proposed for review — no auto-commit. | |
 
 ---
 
