@@ -225,6 +225,27 @@ branch / commits / PR / pipeline #). Follow
 **Commit and push** the updated feasibility docs to the workspace repo (descriptive
 `docs(...)` scope, no AI trailers), staging only this story's files.
 
+## Step 10 — Reflect the shipped story on its Jira ticket (human, on dev-merge)
+
+Once the PR is **merged to `dev`**, mirror the release on the story's Jira ticket so
+the ticket is a self-contained record of what shipped. **Jira stays human-driven** —
+per the repo default the assistant treats Jira as **READ-ONLY** and only creates /
+edits / transitions issues when **explicitly asked**; otherwise the human performs
+these edits (the assistant can prepare the content — e.g. the endpoint list — for the
+human to paste). For each of the story's ticket(s):
+
+- **Transition status → "Dev Done"** (the merged-to-`dev` state).
+- **Attach the implementation plan** (`<Story> - Implementation Plan.md`) to the ticket.
+- **Add the relevant endpoints to the ticket description** — method + path + purpose
+  for each route the story owns or shares (mirrors the docs' **Endpoints** table), so
+  the API surface is discoverable straight from the ticket.
+
+Do this for **every** ticket the story spans (a shared branch may cover more than one —
+e.g. Order History 13.1 + 13.2 both ride the same listing endpoint; each ticket still
+gets its own status + plan attachment + endpoint list). Reference example: **13.1 + 13.2
+(Order History), 2026-07-05** — both tickets set to Dev Done, implementation plan
+attached, endpoints added to the description.
+
 ---
 
 ## Definition of done (per story)
@@ -251,3 +272,6 @@ branch / commits / PR / pipeline #). Follow
       fixed in-loop where applicable) (Step 7).
 - [ ] Feasibility `.md` + `.xlsx` updated with Implementation Status (Step 8) and
       **committed & pushed** to the workspace repo (Step 9).
+- [ ] **Jira ticket(s) reflect the release** (Step 10, human on dev-merge): status →
+      **Dev Done**, **implementation plan attached**, **relevant endpoints added to the
+      description** — for every ticket the story spans.
