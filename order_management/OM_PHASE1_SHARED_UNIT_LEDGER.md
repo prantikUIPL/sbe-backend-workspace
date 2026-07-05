@@ -12,9 +12,9 @@
 
 | # | Unit | Owner | What it is | Consumers (reuse only) |
 |---|---|---|---|---|
-| U1 | **Refund primitive + ledger** | **24.9** | `POST /orders/:id/refunds` (per-installment selection = the primitive; order-level = composition); `refund_failed` added to PaymentTransactionStatus; refund ledger rows; validation caps; `orders.refund` permission key | 24.10 (cancel-with-refund composes it), 24.11 (refund send fires from it), 24.6 (REFUND action flags wire to it; `status_display` Cancelled-qualifiers + Balance = arithmetic over its ledger), 24.7 (refunded rows appear in payments view) |
+| U1 | **Refund primitive + ledger** | **24.9** | `POST /orders/:id/refunds` (per-installment selection = the primitive; order-level = composition) + `GET /orders/:id/refund-options` (eligibility read, `orders.refund.read`); `refund_failed` added to PaymentTransactionStatus; refund ledger rows; validation caps; `orders.refund` + `orders.refund.read` permission keys | 24.10 (cancel-with-refund composes it), 24.11 (refund send fires from it), 24.6 (REFUND action flags wire to it; `status_display` Cancelled-qualifiers + Balance = arithmetic over its ledger), 24.7 (refunded rows appear in payments view) |
 | U2 | **Amount-aware `charge.refunded` webhook handler** | **24.9** (cross-repo: external-api) | Replaces the amount-blind handler; partial-refund aware; ledger-consistent | Everything reading refund state |
-| U3 | **`Order.paid_amount` stays GROSS** | **24.9 (D3, decision not code)** | Net = derived (gross − ledger). Sole legit gross decrement = 24.8's Unpaid-reversal | 24.6-o Balance, 24.7 money summary |
+| U3 | **`Order.paid_amount` stays GROSS; `balance_due` is NET everywhere** | **24.9 (D3, decision not code)** | `paid_amount` stays gross; net = derived (gross − refund ledger); sole legit gross decrement = 24.8's Unpaid-reversal. **CANONICAL (audit ruling 2026-07-05): `balance_due` = `total − netPaid` on EVERY order surface** — 24.6-o is authoritative (only story specifying a refund-aware balance); 24.1 mandates "Balance Due sourced from the centralized billing service"; 24.7/24.8 specs are silent on net-vs-gross. **Audit P1:** 24.7 payments (`order-payments.service.ts:66`), 24.8 plan-GET (`order-payment-plan.service.ts:211`), order list (`orders.service.ts:184`) shipped `balance_due` off GROSS — **fix pending** to align all three to net (24.6 already nets at `order-details.service.ts:244`). | 24.6-o Balance (net), 24.7 money summary (→ net), 24.8 plan-GET (→ net), 24.1 order-list Balance Due (→ net) |
 | U4 | **Cancel endpoint + PT cascade** | **24.10** | Order cancel w/ two-phase `?confirm=`; cascade: scheduled→`canceled` + `next_retry_at:null` (widened where); `orders.cancel` key | 24.11 (post-commit dispatch), 24.6 (Cancelled display + editability gating), 24.15 (canceled rows drop from selection) |
 | U5 | **Inventory `releaseForOrder`** | **24.10 (row k)** | Release order items' inventory on cancel (absorbed from OOS 24.12 as integrity invariant) | — |
 | U6 | **Cancel/refund email pair** | **24.11** | Slugs `order_canceled` / `order_refunded` + templates (SELF-SEEDED per ownership rule); ONE-EMAIL-PER-ACTION; recipient chain billing_email → company contact → skip+log; post-commit dispatch | 24.9/24.10 flows trigger them; 24.6 sheet-findings (departments@ internal notify, send-toggle) = OQ-6 BA rows, NOT scope |
@@ -38,8 +38,9 @@
 | Key | Owner |
 |---|---|
 | `orders.refund` | 24.9 |
+| `orders.refund.read` (refund-options eligibility) | 24.9 |
 | `orders.cancel` | 24.10 |
-| `orders.payment-plan.*` (read/update/delete per 24.8 routes) | 24.8 |
+| `orders.payment-plan.*` (read/create/update/delete per 24.8 routes) | 24.8 |
 | `orders.payments.read` | 24.7 |
 | `orders.view`, `orders.update`, `orders.sales_rep.update`, `orders.payments.void` | 24.6 |
 | (none — UI-less) | 24.15 |
