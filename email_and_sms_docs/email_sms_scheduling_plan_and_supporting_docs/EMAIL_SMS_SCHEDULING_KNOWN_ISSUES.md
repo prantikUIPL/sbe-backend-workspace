@@ -11,7 +11,7 @@
 >
 > **Implementation status:** design complete (now incl. the schedulability marking + dev integration guide); **build not started.**
 >
-> **Last updated:** 2026-06-18 — register extended alongside the updated implementation plan (the `is_schedulable` / `supports_scheduling` marking + the dev integration guide). Added **SCH-2** (open product decision — which triggers get `supports_scheduling = true`), **SCH-3** (FOLLOW_UP `recipients_snapshot` PII / staleness), **SCH-4** (`stop_condition` resolver set not finalized), **SCH-5** (`TEMPLATE_META` widening build-prerequisite), and **SCH-6** (recipient-feasibility — column-recipient sends in scope, token-recipient deferred to base #3 / DRR). Also added **SCH-7** (several client-cited reminders anchor on deferred event/workshop/show-date anchors — from the `SBE_client_feedback_email_sms.pdf` thread). Original entry **SCH-1** = three lead-distribution lifecycle slugs demoted to trigger-only stubs (recoverable from git).
+> **Last updated:** 2026-07-05 — added **SCH-8** (Order Mgmt story 24.15 shipped an independent payment-reminder cron ahead of this scheduler — supersession hand-off per its OQ-4, plus the accepted email-level dedupe granularity and the anchor-column fix for per-installment dedupe). Prior: 2026-06-18 — register extended alongside the updated implementation plan (the `is_schedulable` / `supports_scheduling` marking + the dev integration guide). Added **SCH-2** (open product decision — which triggers get `supports_scheduling = true`), **SCH-3** (FOLLOW_UP `recipients_snapshot` PII / staleness), **SCH-4** (`stop_condition` resolver set not finalized), **SCH-5** (`TEMPLATE_META` widening build-prerequisite), and **SCH-6** (recipient-feasibility — column-recipient sends in scope, token-recipient deferred to base #3 / DRR). Also added **SCH-7** (several client-cited reminders anchor on deferred event/workshop/show-date anchors — from the `SBE_client_feedback_email_sms.pdf` thread). Original entry **SCH-1** = three lead-distribution lifecycle slugs demoted to trigger-only stubs (recoverable from git).
 
 ---
 
@@ -26,6 +26,7 @@
 | SCH-5 | `TEMPLATE_META` value type has no `is_schedulable` key — must **widen the type + update the seeder merge** before any schedulable seed compiles / its flag persists | Build prerequisite (tracked, sequencing) | Us | none (seeder code only) |
 | SCH-6 | Recipient feasibility: scheduled sends **dispatch now only** when recipients are fixed or an **anchor-row column**; token recipients (`{salesperson}`, speaker lists) stay deferred to DRR | Scoped — column/fixed in scope; token deferred (base #3) | Us | new `recipient_source` / `replacements_map` columns on schedules |
 | SCH-7 | Several **client-cited** reminders (workshop confirmation −24h, keynote reminder −7d, electric order −35d/−7d) all anchor on the **event / workshop / show-date** anchors this build **defers** — the engine ships, but those event-proximity sends stay non-functional until the anchors are modelled | **Open — scope/expectation gap to confirm with Product/client** | Product + us (anchor modelling is a separate effort) | new domain date+timezone anchors (event/workshop/show) — not in this build |
+| SCH-8 | **Order Mgmt story 24.15 shipped an INDEPENDENT payment-reminder worker cron** (payment-due upcoming/overdue on `PaymentTransaction.due_date`, manual rows only) ahead of this scheduling system — which claims payment-due reminders (`ANCHOR_RELATIVE` on `due_date`). The future build must **absorb or knowingly coexist** with it. Sub-issue: that cron's dedupe is **email+slug+window, not per-installment**, because `notification_logs` has no order/PT anchor — under-notifies when one billing_email has ≥2 concurrent manual installments in the same window | **Recorded — hand-off from 24.15 (OQ-4); accepted email-level dedupe for the OM release** | Us (this scheduling effort — absorb the cron + add the anchor) | To fix dedupe: a nullable `payment_transaction_id` (or `order_id`) column on `notification_logs` + include it in the dedupe key |
 
 ---
 
@@ -152,6 +153,26 @@ These three headline reminders, and their anchors:
 **The mechanics are already covered** — multi-offset (−35d & −7d on one rule), `EVENT` timezone, and the offset model all exist in the plan/story; the gap is purely the **anchor data**, not the scheduling logic.
 
 **Status / recommendation:** **Open — confirm scope/expectations with Product (and ultimately the client).** Two honest options to surface: (a) ship the engine on the in-scope anchors now and schedule the event/workshop/show-date anchor modelling as the immediate follow-on; or (b) pull the show-date anchor (and a workshop-time field) into *this* effort if the client's event-proximity reminders are must-have at launch. No schema change is needed to *add* an anchor later — `anchor_entity`/`anchor_field` are open — so (a) does not paint us into a corner. Cross-ref: story §1.1 + §6 coverage caveat, plan §4.7 (anchor table) / §9, and the Deferred-scope "Unbuilt client anchors" bullet below.
+
+---
+
+## SCH-8. Order Mgmt 24.15 independent payment-reminder cron — supersession hand-off + dedupe granularity
+
+**Origin.** Order Management story **24.15 (SBE-1139, Payment Reminder Notifications)** shipped in the OM Phase-1 release (2026-07-05) as a deliberately minimal, **independent worker cron** — not waiting for this scheduling system. It was flagged at that story's 2026-07-03 scope gate (its **OQ-4**) that the note belongs **here**, in the scheduling register, so whoever builds the dynamic scheduler absorbs it knowingly. (Filed per the register-separation rule — NOT the base-module `EMAIL_SMS_KNOWN_ISSUES.md`.)
+
+**What 24.15 built.** A worker cron pair (cloned from the proven payment-charge registrar/task) that emails the billing contact of **manual** (non-card) installments:
+- **UPCOMING** — `status=scheduled AND payment_type != credit_card AND due_date ∈ [now, now+upcoming_days]`, sent once (slug `payment_reminder_upcoming`).
+- **OVERDUE** — same but `due_date < now`, repeating every `overdue_interval_days` (slug `payment_reminder_overdue`).
+- Settings `payment_reminder_{upcoming_days,overdue_interval_days,hour_utc}` = 7 / 7 / 14 (worker-side defaults, gate-provenance-documented, BA ratification pending).
+- Stop needs no new state: rows drop from selection when they settle (24.8 Mark-Paid → `succeeded`, 24.6 void → `canceled`).
+
+**Overlap with this design.** The scheduling `ANCHOR_RELATIVE` kind explicitly targets `PaymentTransaction.due_date` (payment-due reminders). So this scheduler, when built, **duplicates 24.15's purpose**. The future build must either (a) migrate these two sends into scheduled rules and retire the standalone cron, or (b) knowingly coexist (disjoint by slug) — a conscious decision, not an accident.
+
+**Sub-issue — dedupe is email-level, not per-installment (accepted for the OM release).** 24.15's dedupe asks `notification_logs` *"was a SENT row for this **email + slug** written inside the window?"* — it has **no order/PT anchor** because `notification_logs` carries only `email` / `user_id` / `exhibitor_id` (+ the template relation), never an order or installment id. Consequence: if one `billing_email` has **≥2 concurrent manual installments** qualifying for the same slug in the same window (two overdue installments of one plan, or two orders sharing a payer), the first send **suppresses** the others → **under-notification** (never a wrong, duplicate, or leaked email; the skipped row keeps reappearing and gets sent once the window clears). The OM team **accepted this** (Option A) for the release rather than expand a shared, high-write table in the final phase — especially since this cron is slated for absorption here.
+
+**The fix (for whoever owns per-installment dedupe next — likely this build):** add a nullable `payment_transaction_id Int?` (FK → `payment_transactions`, `onDelete: SetNull`) + index on `notification_logs`, populate it on reminder sends (worker mailer `sendFromTemplate` gains an optional pass-through), and key the dedupe on it. Nullable is required — the column is meaningless for the ~99% of log rows that aren't payment reminders, so no backfill. The scheduler will likely need a similar per-occurrence anchor regardless, so this is not throwaway work.
+
+**Status / recommendation:** **Recorded — hand-off accepted.** No action required for the OM release (24.15 ships as-is with the documented email-level dedupe). When this scheduling effort starts, decide absorb-vs-coexist and fold the anchor-column dedupe fix into the occurrence model.
 
 ---
 
