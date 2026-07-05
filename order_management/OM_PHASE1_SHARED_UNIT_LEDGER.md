@@ -65,3 +65,7 @@
 24.6  U14-U18 detail page + void                  (consumes U1, U4, U10; links U13)
 24.15 U19     reminders                           (consumes U7, U11-signal, U17-signal; builds LAST)
 ```
+
+## Process notes (Step-8 register)
+
+- **Inline the ledger's exact spec into each consuming build brief — don't reference a sibling story's decision by name.** Root cause of the U10 milestone-label drift: the Phase-4 (24.8) build brief said "map the 7 statuses to a display label, display-only **per D1**, no chargeback values" but did NOT inline D1's exact strings (`scheduled→Unpaid, failed→CC Failed, canceled→Voided`) — those live in the 24.6 doc + U10 here, not the 24.8 doc. The build agent filled the gap with the enum's literal names (`Scheduled/Failed/Canceled`), which satisfied the letter of the brief and passed 24.8/24.7 review + smoke (neither pinned the wording). It surfaced only at the Phase-6 (24.6) build, whose brief DID inline the exact map — so that build caught the shipped mapper's deviation and flagged it instead of forking. Fix applied 2026-07-04: relabelled `MILESTONE_STATUS_LABELS` to the U10 map (corrects 24.7/24.8's already-merged displays too; ships with 24.6). Lesson: when a build consumes a shared unit whose canonical spec lives here, paste the spec verbatim into the brief.
