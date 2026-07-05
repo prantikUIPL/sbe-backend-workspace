@@ -7,11 +7,13 @@
 
 Release: **feature/SBE-1125** (7 admin Order-Management stories: 24.6/24.7/24.8/24.9/24.10/24.11/24.15), merged to `dev`. All 5 repos audited at dev tip = the full merged artifact.
 
-> **POST-AUDIT RULINGS & STATUS (2026-07-05, Prantik):**
-> - **P1 — RULED NET.** Confluence + story-doc cross-check confirmed 24.6 is the only story specifying a refund-aware balance; 24.7/24.8 are silent and 24.1 mandates a "centralized billing service" balance → **24.6 is authoritative → `balance_due` = net everywhere.** Fix = align the 3 gross surfaces (24.7 payments, 24.8 plan-GET, order list) to `deriveNetPaid`, bundled with P3+P4 on one admin fix branch (branch cut pending authorization). Also revisit the 24.7 `payment_status` label (gross → net).
+> **POST-AUDIT RULINGS & STATUS (2026-07-05, Prantik) — ALL FIXES SHIPPED:**
+> - **P1 — RULED NET → ✅ SHIPPED.** Confluence + story-doc cross-check confirmed 24.6 is the only story specifying a refund-aware balance; 24.7/24.8 are silent and 24.1 mandates a "centralized billing service" balance → **24.6 is authoritative → `balance_due` = net everywhere.** Aligned the 3 gross surfaces (24.7 payments, 24.8 plan-GET, 24.1 order list) to `deriveNetPaid` + the 24.7 `payment_status` label (gross → net). Fixed in `fix(SBE-1131)` `7fd7a9b`, admin PR#539 → dev `55c6e61` (gate green 3360/3360 + DB reset; 4-view consistency smoke PASS; pipeline #879 SUCCESSFUL; all 5 repos == dev).
 > - **P2 — DONE (doc).** billing_email-only recorded as intended in the plan P-D7 note + ledger U19-adjacent (spec-compliant, no code change).
+> - **P3 — ✅ SHIPPED.** 24.10-c cancel-DTO Swagger wording corrected (scheduled|failed → canceled; processing 409-blocked) in `7fd7a9b` (PR#539).
+> - **P4 — ✅ SHIPPED.** Installment permission-seeder URL → snake_case `:installment_id` in `7fd7a9b` (PR#539); virgin-DB seed verified, 0 camelCase leftovers.
 > - **P5 — DONE (doc).** Ledger U1/U12/U3 reconciled to the delivered surface (refund-options + `orders.refund.read`; `payment-plan.create`; net-balance canonical).
-> - **P3, P4 — pending** on the admin fix branch (Swagger wording; seeder URL snake_case).
+> - **Story docs — ✅ DONE (2026-07-05).** Implementation Status flipped to Delivered/Merged across all 7 OM stories + 24.1 (`.md` + `.xlsx`); shared release plan copied into each story subfolder.
 
 ---
 
