@@ -1,0 +1,23 @@
+flowchart LR
+    CAP(["Admin Quick Actions"])
+    AGREE["GET :id/agreement.pdf | .docx"]
+    INV["GET :id/invoices/:invoiceId/invoice"]
+    COMMS["POST invite-user /<br/>resend-confirmation /<br/>resend-portal-password"]
+    IMP["POST :id/impersonate"]
+    SVC["OrderActionsService /<br/>Agreement & Invoice doc services"]
+    MAIL["Mailer + document store"]
+    SESSION["Exhibitor session cookies<br/>+ audit log"]
+
+    CAP -->|"documents"| AGREE
+    CAP -->|"documents"| INV
+    CAP -->|"emails"| COMMS
+    CAP -->|"session"| IMP
+    AGREE -->|"stream via"| SVC
+    COMMS -->|"send via"| SVC
+    SVC -->|"generates / sends"| MAIL
+    IMP -->|"mints"| SESSION
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class CAP ego;
+    class AGREE,INV,COMMS,IMP,SVC,MAIL,SESSION neighbor;

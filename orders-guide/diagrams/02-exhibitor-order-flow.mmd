@@ -1,0 +1,20 @@
+flowchart LR
+    LOGIN["Exhibitor JWT<br/>req.user.id → company (server-side)"]
+    LIST["My Orders<br/>GET /orders"]
+    EMPTY["Empty state<br/>isEmpty = true"]
+    ROW["A row<br/>(payment_status, shows[], can_pay, can_download_invoice)"]
+    DETAILS["View order<br/>GET /orders/:orderId"]
+    NF["404<br/>(foreign / unknown id)"]
+    AGG["Aggregate<br/>booths · add_ons · sponsorships · financial_summary · payments(settled) · agreement · onsite_contacts"]
+    INVOICE["Download invoice<br/>GET /orders/:orderId/invoice"]
+    PDF["Latest persisted invoice PDF (Option B, product-only)"]
+
+    LOGIN --> LIST
+    LIST -->|no orders| EMPTY
+    LIST -->|has orders| ROW
+    ROW -->|View| DETAILS
+    DETAILS -->|not owned| NF
+    DETAILS -->|owned| AGG
+    ROW -->|Invoice| INVOICE
+    AGG -->|Download Invoice| INVOICE
+    INVOICE --> PDF

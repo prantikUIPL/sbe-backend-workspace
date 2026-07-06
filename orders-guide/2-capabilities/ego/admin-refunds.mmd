@@ -1,0 +1,23 @@
+flowchart LR
+    CAP(["Admin Refunds"])
+    EP_OPT["GET :id/refund-options"]
+    EP_REF["POST :id/refunds"]
+    SVC["OrderRefundService"]
+    LEDGER["Refund ledger rows"]
+    STRIPE["external-api /v1/refunds<br/>(Stripe wrapper)"]
+    AUDIT["AdminAuditLog"]
+    CANCEL["Admin Cancellation (consumes)"]
+
+    CAP -->|"read caps"| EP_OPT
+    CAP -->|"issue"| EP_REF
+    EP_OPT -->|"handled by"| SVC
+    EP_REF -->|"handled by"| SVC
+    SVC -->|"writes"| LEDGER
+    SVC -->|"Stripe leg → "| STRIPE
+    SVC -->|"records"| AUDIT
+    CAP -.->|"reused by"| CANCEL
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class CAP ego;
+    class EP_OPT,EP_REF,SVC,LEDGER,STRIPE,AUDIT,CANCEL neighbor;

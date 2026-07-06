@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant C as Client (admin)
+    participant Ctl as OrdersController
+    participant Svc as OrderRefundService
+    participant Ext as external-api /v1/refunds
+    participant DB as Prisma / Postgres
+    C->>Ctl: GET /:id/refund-options (orders.refund.read)
+    Ctl->>Svc: getRefundOptions(id)
+    Svc-->>C: 200 caps + methods per installment
+    C->>Ctl: POST /:id/refunds { txn?, amount, method, reason }
+    Ctl->>Svc: createRefund(id, body)
+    Svc->>DB: validate caps + reason
+    alt method = stripe
+        Svc->>Ext: stripe.refunds.create (per charge)
+        Ext-->>Svc: result | failure→refund_failed
+    else method = manual
+        Svc->>DB: write Refund ledger row (no money moves)
+    end
+    Svc->>DB: update installment/order status + audit
+    Svc-->>C: 201 per-leg outcomes

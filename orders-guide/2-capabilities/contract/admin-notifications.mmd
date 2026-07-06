@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant Cancel as Cancel / Refund flow
+    participant M as Mailer (self-seeded templates)
+    participant Cron as background-worker cron
+    participant DB as Prisma / Postgres
+    participant Cust as Customer inbox
+    Cancel->>M: send_notification=true → send one email (24.11)
+    M-->>Cust: cancellation / refund email
+    loop scheduled pass (24.15)
+        Cron->>DB: find installments due/overdue
+        Cron->>M: send reminder (idempotent per window)
+        M-->>Cust: payment reminder email
+    end
+    Note over Cron: dev-only POST /manual-trigger/payment-reminders/run runs a pass on demand

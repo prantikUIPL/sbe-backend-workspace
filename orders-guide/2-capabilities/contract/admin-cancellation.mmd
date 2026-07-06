@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant C as Client (admin)
+    participant Ctl as OrdersController.cancelOrder
+    participant Svc as OrderCancelService
+    participant Ref as Refund engine (24.9)
+    participant DB as Prisma / Postgres
+    C->>Ctl: POST /:id/cancel?confirm= (orders.cancel)
+    alt no confirm (preview)
+        Ctl->>Svc: previewCancel(id, body)
+        Svc-->>C: 200 OrderCancelPreviewDto (nothing written)
+    else confirm=true (execute)
+        Ctl->>Svc: cancelOrder(id, body)
+        Svc->>DB: BEGIN — FOR UPDATE locks on PaymentTransaction
+        alt any installment processing
+            Svc-->>C: 409 CHARGE_IN_FLIGHT
+        else
+            Svc->>DB: flip Cancelled + cascade installments + releaseForOrder + audit
+            Svc->>DB: COMMIT
+            Svc->>Ref: post-commit refund (full/partial)
+            Svc-->>C: 200 OrderCancelResponseDto (+ refund legs / stated refund error)
+        end
+    end

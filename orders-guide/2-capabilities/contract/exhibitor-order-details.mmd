@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant Ctl as OrdersController.getDetails
+    participant Svc as OrderDetailsService
+    participant DB as Prisma / Postgres
+    C->>Ctl: GET /orders/:orderId (Bearer JWT)
+    Ctl->>Svc: getOrderDetails(exhibitorId, orderId)
+    Svc->>DB: resolve companyId
+    Svc->>DB: order.findFirst({ id, company_id, deleted_at:null })
+    alt not found / foreign
+        DB-->>Svc: null
+        Svc-->>C: 404
+    else found
+        Svc->>DB: paymentMethod.findMany (settled txns, by company)
+        Svc->>DB: onsiteBoothContact.findMany({ company_id, show_id in shows })
+        Svc->>Svc: toDetails() — classify items, financial summary, onsite per show
+        Svc-->>Ctl: OrderDetailsResponseDto
+        Ctl-->>C: 200
+    end

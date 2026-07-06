@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant C as Client (admin)
+    participant Ctl as OrdersController
+    participant Svc as Doc / Actions services
+    participant M as Mailer / Doc store / Session
+    C->>Ctl: GET agreement.pdf|.docx  (orders.agreement.read)
+    Ctl->>Svc: streamAgreement(id, format)
+    Svc-->>C: 200 StreamableFile
+    C->>Ctl: POST invite-user / resend-* (throttled)
+    Ctl->>Svc: OrderActionsService
+    Svc->>M: send one email (reject if inside throttle)
+    Svc-->>C: 200/201
+    C->>Ctl: POST :id/impersonate
+    Ctl->>Svc: mint exhibitor session
+    Svc-->>C: 200 + Set-Cookie SBEEXHIBITOR_* (+ audit)

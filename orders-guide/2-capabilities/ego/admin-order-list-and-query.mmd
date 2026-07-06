@@ -1,0 +1,22 @@
+flowchart LR
+    CAP(["Admin Order List & Query"])
+    EP_LIST["GET /orders<br/>(filter/search/sort params)"]
+    EP_CITY["GET /cities"]
+    SVC["OrdersService.listOrders"]
+    ORDER["Order (all, not scoped)"]
+    COMPANY["Company / City"]
+    DTO["OrderListResponseDto"]
+    DETAILS["Admin Order Details"]
+
+    CAP -->|"exposes"| EP_LIST
+    CAP -.->|"filter dropdown"| EP_CITY
+    EP_LIST -->|"handled by"| SVC
+    SVC -->|"reads (permission-gated)"| ORDER
+    SVC -->|"joins for filter/label"| COMPANY
+    SVC -->|"returns"| DTO
+    CAP -.->|"row View →"| DETAILS
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class CAP ego;
+    class EP_LIST,EP_CITY,SVC,ORDER,COMPANY,DTO,DETAILS neighbor;

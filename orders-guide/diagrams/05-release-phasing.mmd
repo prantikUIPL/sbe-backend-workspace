@@ -1,0 +1,16 @@
+flowchart LR
+    P1["Phase 1<br/>24.9 Refunds<br/>SBE-1133"]
+    P2["Phase 2<br/>24.10 Cancellation<br/>SBE-1134"]
+    P3["Phase 3<br/>24.11 Cancel Email<br/>SBE-1135"]
+    P4["Phase 4<br/>24.8 Payment Plans<br/>SBE-1132"]
+    P5["Phase 5<br/>24.7 Manual Payments<br/>SBE-1131"]
+    P6["Phase 6<br/>24.6 Order Details<br/>SBE-1130"]
+    P7["Phase 7<br/>24.15 Reminders<br/>SBE-1139"]
+    P8["Phase 8<br/>Delivery audit<br/>(65 verified, 0 lost)"]
+
+    PRE["Pre-Phase-1 (already merged):<br/>24.1-24.4 list (SBE-1125) · 24.5 quick actions (SBE-1129) · 24.14 notes (SBE-1138)"]
+
+    PRE --> P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7 --> P8
+    P6 -.->|follow-up PR#542| L2["24.6-l2 onsite contacts"]
+
+    NOTE["All Phase-1 on branch feature/SBE-1125, merged to dev 2026-07-05"]

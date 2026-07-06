@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant C as Client (admin)
+    participant Ctl as OrdersController.updateOrderNotes
+    participant Svc as OrderNotesService
+    participant DB as Prisma ($transaction)
+    C->>Ctl: PATCH /orders/:id/notes (orders.notes.update)
+    Ctl->>Svc: updateNotes(id, payload, userId)
+    Svc->>Svc: validate ≥1 field, trim (empty→null)
+    Svc->>DB: BEGIN
+    Svc->>DB: update changed columns
+    loop each field that actually changed
+        Svc->>DB: recordMany AdminAuditLog entry
+    end
+    Svc->>DB: COMMIT
+    Svc-->>C: 200 OrderNotesResponseDto (refreshed)

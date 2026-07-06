@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant G as JwtAuthGuard
+    participant Ctl as OrdersController.list
+    participant Svc as OrdersService
+    participant DB as Prisma / Postgres
+    C->>G: GET /orders (Bearer JWT)
+    G->>Ctl: req.user.id = exhibitorId
+    Ctl->>Svc: listOrders(exhibitorId, query)
+    Svc->>DB: resolve companyId, then order.findMany({ company_id, deleted_at:null })
+    DB-->>Svc: rows
+    Svc->>Svc: derive payment_status / is_overdue / can_pay + buildOrderShows
+    Svc-->>Ctl: { data[], meta, isEmpty }
+    Ctl-->>C: 200 OrderListResponseDto

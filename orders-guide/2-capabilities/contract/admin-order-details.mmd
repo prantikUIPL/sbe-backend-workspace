@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant C as Client (admin)
+    participant P as Permissions
+    participant Ctl as OrdersController
+    participant DS as OrderDetailsService
+    participant US as OrderUpdateService
+    participant DB as Prisma / Postgres
+    C->>P: GET /orders/:id (orders.view)
+    P->>Ctl: authorized
+    Ctl->>DS: getOrderDetails(id)
+    DS->>DB: order.findFirst({ id, deleted_at:null }) — all types, not scoped
+    alt not found
+        DS-->>C: 404
+    else found
+        DS->>DB: onsite join + resolve creator/plan/refund ledger
+        DS-->>Ctl: OrderDetailsResponseDto
+        Ctl-->>C: 200
+    end
+    Note over C,US: PATCH /:id or /:id/sales-rep → US validates + writes (status gate),<br/>audits, then returns the refreshed aggregate

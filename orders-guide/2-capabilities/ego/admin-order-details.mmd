@@ -1,0 +1,22 @@
+flowchart LR
+    CAP(["Admin Order Details"])
+    EP_GET["GET /orders/:id"]
+    EP_PATCH["PATCH /orders/:id<br/>(billing + emails)"]
+    EP_REP["PATCH /orders/:id/sales-rep"]
+    SVC["OrderDetailsService /<br/>OrderUpdateService"]
+    ORDER["Order (all types, findFirst)"]
+    CONSUMED["consumes: notes / installments /<br/>refund ledger / agreement"]
+    DTO["OrderDetailsResponseDto"]
+
+    CAP -->|"exposes"| EP_GET
+    CAP -->|"exposes"| EP_PATCH
+    CAP -->|"exposes"| EP_REP
+    EP_GET -->|"handled by"| SVC
+    SVC -->|"scoped read → 404"| ORDER
+    SVC -->|"surfaces (read-only)"| CONSUMED
+    SVC -->|"returns / edits refresh"| DTO
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class CAP ego;
+    class EP_GET,EP_PATCH,EP_REP,SVC,ORDER,CONSUMED,DTO neighbor;

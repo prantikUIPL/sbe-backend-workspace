@@ -1,0 +1,35 @@
+flowchart TB
+    subgraph EX["Exhibitor surface — exhibitor-backend-api (JWT, company-scoped, read-only)"]
+        E_LIST["GET /orders (13.1/13.2)"]
+        E_DET["GET /orders/:orderId (13.3)"]
+        E_INV["GET /orders/:orderId/invoice (13.2-g/13.3-s)"]
+    end
+
+    subgraph AD["Admin surface — admin-backend-api (permissions, all orders, read+write)"]
+        A_LIST["GET /orders (24.1-24.4)"]
+        A_DET["GET/PATCH /orders/:id + sales-rep (24.6)"]
+        A_QA["Quick actions: agreement/invoice/invite/resend/impersonate (24.5)"]
+        A_NOTES["GET/PATCH /orders/:id/notes (24.14)"]
+        A_PAY["payments + payment-plan CRUD + void (24.7/24.8/24.6-Dz)"]
+        A_REF["refund-options + refunds (24.9)"]
+        A_CANCEL["POST /orders/:id/cancel (24.10)"]
+        A_NOTIF["cancellation email + reminder cron (24.11/24.15)"]
+    end
+
+    ORDER[("Order (shared table, one Postgres DB)")]
+
+    E_LIST --> ORDER
+    E_DET --> ORDER
+    E_INV --> ORDER
+    A_LIST --> ORDER
+    A_DET --> ORDER
+    A_QA --> ORDER
+    A_NOTES --> ORDER
+    A_PAY --> ORDER
+    A_REF --> ORDER
+    A_CANCEL --> ORDER
+    A_NOTIF -.-> ORDER
+
+    A_CANCEL -->|post-commit| A_REF
+    A_REF -.->|send_notification| A_NOTIF
+    A_CANCEL -.->|send_notification| A_NOTIF

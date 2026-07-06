@@ -1,0 +1,30 @@
+flowchart LR
+    subgraph OWN["Owning story → shared build unit"]
+        U_REF["24.9 · refund primitive + ledger + Stripe wrapper"]
+        U_C13["24.8 · C13 installment-row mapper"]
+        U_PLAN["24.8 · plan CRUD + locks + Unallocated Balance"]
+        U_CANCEL["24.10 · cancel cascade + releaseForOrder"]
+        U_NOTES["24.14 · internal_notes columns + audit write path"]
+        U_AGREE["24.5 · signed-agreement download"]
+        U_EMAIL["24.11 · cancel/refund email"]
+    end
+
+    DETAILS["24.6 Admin Order Details<br/>(consumer of many)"]
+    PAY["24.7 Payments view"]
+    CANCELCAP["24.10 Cancellation"]
+    REFUNDCAP["24.9 Refunds"]
+
+    U_C13 --> DETAILS
+    U_C13 --> PAY
+    U_PLAN --> DETAILS
+    U_REF --> DETAILS
+    U_REF --> CANCELCAP
+    U_NOTES --> DETAILS
+    U_AGREE --> DETAILS
+    U_CANCEL --> CANCELCAP
+    U_CANCEL -.->|absorbs 24.12 inventory release| CANCELCAP
+    U_EMAIL -.-> CANCELCAP
+    U_EMAIL -.-> REFUNDCAP
+
+    classDef unit fill:#e8f5e9,stroke:#2e7d32,color:#000;
+    class U_REF,U_C13,U_PLAN,U_CANCEL,U_NOTES,U_AGREE,U_EMAIL unit;

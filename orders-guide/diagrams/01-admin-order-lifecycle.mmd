@@ -1,0 +1,30 @@
+flowchart LR
+    START["Order exists<br/>(from checkout / admin cart)"]
+    LIST["List & find<br/>GET /orders"]
+    VIEW["Open details<br/>GET /orders/:id"]
+
+    EDIT["Edit billing / rep<br/>PATCH /orders/:id (+/sales-rep)"]
+    NOTES["Notes & audit<br/>GET/PATCH /orders/:id/notes"]
+    PAY["Payments & plan<br/>GET payments · payment-plan CRUD"]
+    VOID["Void one installment<br/>POST /payments/:txn/void"]
+    REFUND["Refund<br/>refund-options · POST /refunds"]
+    CANCEL["Cancel (2-phase)<br/>POST /orders/:id/cancel?confirm="]
+    QA["Quick actions<br/>agreement · invoice · invite · resend · impersonate"]
+
+    DONE_C["status: canceled"]
+    DONE_R["status: refunded"]
+    NOTIFY["Email (24.11) / reminder cron (24.15)"]
+
+    START --> LIST --> VIEW
+    VIEW --> EDIT
+    VIEW --> NOTES
+    VIEW --> PAY
+    VIEW --> QA
+    PAY --> VOID
+    VIEW --> REFUND
+    VIEW --> CANCEL
+    CANCEL -->|confirm=true| DONE_C
+    CANCEL -->|post-commit| REFUND
+    REFUND -->|all settled refunded| DONE_R
+    CANCEL -.->|send_notification| NOTIFY
+    REFUND -.->|send_notification| NOTIFY

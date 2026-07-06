@@ -1,0 +1,22 @@
+flowchart LR
+    CAP(["Exhibitor Order Details"])
+    EP_GET["GET /orders/:orderId"]
+    EP_INV["GET /orders/:orderId/invoice"]
+    SVC["OrderDetailsService<br/>+ order-details.helpers"]
+    ORDER["Order (company-scoped findFirst)"]
+    ONSITE["OnsiteBoothContact<br/>(per show)"]
+    PM["PaymentMethod / Invoice"]
+    DTO["OrderDetailsResponseDto"]
+
+    CAP -->|"exposes"| EP_GET
+    CAP -->|"exposes"| EP_INV
+    EP_GET -->|"handled by"| SVC
+    SVC -->|"scoped read → 404"| ORDER
+    SVC -->|"per-show join"| ONSITE
+    SVC -->|"keyed lookup"| PM
+    SVC -->|"returns"| DTO
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class CAP ego;
+    class EP_GET,EP_INV,SVC,ORDER,ONSITE,PM,DTO neighbor;

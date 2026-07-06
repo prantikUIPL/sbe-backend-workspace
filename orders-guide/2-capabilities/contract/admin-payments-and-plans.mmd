@@ -1,0 +1,16 @@
+sequenceDiagram
+    autonumber
+    participant C as Client (admin)
+    participant Ctl as OrdersController
+    participant Svc as PaymentPlan / Payments / Void service
+    participant DB as Prisma / Postgres
+    C->>Ctl: POST /:id/payment-plan/installments (confirm?)
+    Ctl->>Svc: addInstallment(id, body, confirm)
+    Svc->>DB: recheck Unallocated Balance in tx
+    alt date warnings and not confirmed
+        Svc-->>C: 200 OrderPaymentPlanChangePreviewDto (nothing written)
+    else execute
+        Svc->>DB: insert installment (copy Stripe identity if credit_card)
+        Svc-->>C: 200 refreshed OrderPaymentPlanResponseDto
+    end
+    Note over C,Svc: PATCH …/:installment_id → exactly one of due_date | mark_as<br/>DELETE …/:installment_id → frees balance · POST …/void → terminal cancel-one

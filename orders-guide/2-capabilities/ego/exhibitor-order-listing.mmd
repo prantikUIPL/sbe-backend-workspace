@@ -1,0 +1,22 @@
+flowchart LR
+    CAP(["Exhibitor Order Listing"])
+    EP_LIST["GET /orders"]
+    SVC["OrdersService.listOrders"]
+    HELP["orders.helpers<br/>derivePaymentStatus / buildOrderShows"]
+    ORDER["Order (company-scoped)"]
+    SHOW["Shows"]
+    DTO["OrderListResponseDto<br/>{data[], meta, isEmpty}"]
+    DETAILS["Exhibitor Order Details"]
+
+    CAP -->|"exposes"| EP_LIST
+    EP_LIST -->|"handled by"| SVC
+    SVC -->|"derives rows via"| HELP
+    SVC -->|"reads (where company_id)"| ORDER
+    HELP -->|"groups"| SHOW
+    SVC -->|"returns"| DTO
+    CAP -.->|"row View →"| DETAILS
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class CAP ego;
+    class EP_LIST,SVC,HELP,ORDER,SHOW,DTO,DETAILS neighbor;

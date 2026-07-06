@@ -1,0 +1,22 @@
+flowchart LR
+    CAP(["Admin Notes & Audit"])
+    EP_GET["GET /orders/:id/notes"]
+    EP_PATCH["PATCH /orders/:id/notes"]
+    EP_LOG["GET /logs/admin-audit"]
+    SVC["OrderNotesService"]
+    COLS["Order.internal_notes / payment_memo /<br/>invoice_note / additional_terms"]
+    AUDIT["AdminAuditLog<br/>(one row per changed field)"]
+    DETAILS["Admin Order Details (displays)"]
+
+    CAP -->|"exposes"| EP_GET
+    CAP -->|"exposes"| EP_PATCH
+    CAP -.->|"trail via"| EP_LOG
+    EP_PATCH -->|"handled by"| SVC
+    SVC -->|"writes (tx)"| COLS
+    SVC -->|"records (tx)"| AUDIT
+    CAP -.->|"read by"| DETAILS
+
+    classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
+    classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
+    class CAP ego;
+    class EP_GET,EP_PATCH,EP_LOG,SVC,COLS,AUDIT,DETAILS neighbor;

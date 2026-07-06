@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant C as Client (admin)
+    participant P as Permissions('orders.list')
+    participant Ctl as OrdersController.listOrders
+    participant Svc as OrdersService
+    participant DB as Prisma / Postgres
+    C->>P: GET /orders?filters/search/sort
+    P->>Ctl: authorized
+    Ctl->>Svc: listOrders(query)
+    Svc->>Svc: validate + build where / orderBy
+    Svc->>DB: order.findMany (joins Company, City) — not company-scoped
+    DB-->>Svc: rows + count
+    Svc-->>Ctl: { data[], meta }
+    Ctl-->>C: 200 OrderListResponseDto
