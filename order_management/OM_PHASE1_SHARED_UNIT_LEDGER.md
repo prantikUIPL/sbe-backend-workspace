@@ -52,7 +52,7 @@
 3. **Template ownership**: each flow seeds its own slugs/templates (24.11: U6; 24.15: U19); E&S epic manages after. Append-don't-reorder in both seeders; fail-loud META guard is the backstop.
 4. **NO copying, importing, or replicating functionality** (user directive 2026-07-03; SonarQube duplication gate — precedent `adeba9f` SBE-1129, where the ~1k-line agreement-service copy was refactored into `base-agreement-document.service.ts`). **Same repo:** when needed logic already exists in another module, hoist it into a shared base/common service and make both call sites consume it — never a second copy. **Cross-repo** (e.g. exhibitor 13.3 helpers needed in admin): implement natively to the same *semantics* (the story docs' cited exhibitor code is the behavioral spec, not a source to transplant) — small, repo-idiomatic functions so Sonar's duplication detector has nothing to flag.
 5. **No story touches other teams' modules**: cart-module write gaps = register rows (24.6 OQ-1); SonarQube read-only; id-encryption conventions (PR#455) checked at plan time for all new route params.
-6. **Parked/deferred — NO plan includes**: 24.6-r send-email (OQ-4), 24.6-v/x HubSpot (OQ-5), 24.6-w QB (epic 65), 24.6-l2 onsite contact (SBE-1169/1171), chargeback trio (24.8-l ND).
+6. **Parked/deferred — NO plan includes**: 24.6-r send-email (OQ-4), 24.6-v/x HubSpot (OQ-5), 24.6-w QB (epic 65), chargeback trio (24.8-l ND). _(24.6-l2 onsite contact was here — delivered 2026-07-06 as a follow-up once SBE-1169/1171 reached DEV DONE, PR#542; twin 13.3-w PR#305.)_
 7. **Registers**: scheduling hand-off → scheduling register only; nothing written to EMAIL_SMS_KNOWN_ISSUES.md (separation rule).
 
 ## Sequencing skeleton

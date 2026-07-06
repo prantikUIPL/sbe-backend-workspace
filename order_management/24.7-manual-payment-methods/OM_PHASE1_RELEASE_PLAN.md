@@ -216,7 +216,7 @@ All design decisions were made and locked at the 2026-07-03 gates and live in th
 |---|---|---|
 | 6.1 | Migration: `Order.additional_emails` Json + permission seeds (`orders.view/update/sales_rep.update/payments.void`) | 24.6-i/y |
 | 6.2 | admin: derivation helpers — `status_display` (D1 six-value map over status + ledger arithmetic) + rep/source chain (D3) — native, shared within orders module | 24.6-b/j/t |
-| 6.3 | admin: `GET /orders/:id` aggregate — general, notes/memo/terms (read-only; `Order.notes` NEVER exposed), billing, additional_emails, customer link, line-item tree w/ flat fallback + `cart.coupon.code` join, onsite-contact ABSENT (deferred), fees, totals + items-subtotal/fees breakdown (C10), plan block via U10 + next-installment query, signer, agreement/payments links, sales rep object | 24.6-a,c…h,k,l,m,n,o,p,q,s-link |
+| 6.3 | admin: `GET /orders/:id` aggregate — general, notes/memo/terms (read-only; `Order.notes` NEVER exposed), billing, additional_emails, customer link, line-item tree w/ flat fallback + `cart.coupon.code` join, per-show `onsite_contacts` block (added 2026-07-06 follow-up PR#542; absent in the original Phase-6 cut), fees, totals + items-subtotal/fees breakdown (C10), plan block via U10 + next-installment query, signer, agreement/payments links, sales rep object | 24.6-a,c…h,k,l,m,n,o,p,q,s-link |
 | 6.4 | admin: `PATCH /orders/:id` (billing + additional_emails; 24.6-aa status matrix from Status Breakdowns; audit) + `PATCH :id/sales-rep` (deal-owner-pattern validation → sales_person_id; dropdown source decision: reuse `GET carts/deal-owners` if cleanly consumable, else own endpoint) | 24.6-h/i/u/aa |
 | 6.5 | admin: `POST /orders/:id/payments/:transactionId/void` — guard status IN (scheduled, failed) → canceled + next_retry_at:null; "Voided" label via U10; audit | 24.6-z void half (refund half = flags wired to Phase 1) |
 | **Gate** | Aggregate correct for: exhibitor-created (full billing, tree), admin-created (null billing, flat — graceful), multi-show, subscription (no cart), refunded, cancelled fixtures; edit matrix blocks per status; void end-to-end; spec tests green | |
@@ -290,7 +290,7 @@ Every new route: JWT + RolesGuard + `@Permissions()` key per the ledger allocati
 | 24.6-r send-order-email | Needs clarification | 24.6 OQ-4 |
 | 24.6-v/x HubSpot deal sync | Needs clarification (no owning epic) | 24.6 OQ-5 |
 | 24.6-w QuickBooks force sync; 24.9-i; 24.8-l QB actions | Blocked/OOS — epic 65 | story docs |
-| 24.6-l2 per-item onsite contact | Deferred — SBE-1169/1171 | 24.6 OQ-3 |
+| 24.6-l2 per-item onsite contact | **Delivered 2026-07-06 (PR#542, follow-up)** — SBE-1169/1171 reached DEV DONE; per-show `onsite_contacts` block | 24.6 OQ-3 (resolved) |
 | Chargeback trio statuses/webhooks | Not Deliverable | 24.8-l + sheet citation |
 | additional_emails CC on automated sends | Pending one BA answer | 24.6 OQ-2 / 24.15 OQ-3 |
 | SMS channel; cadence values final; departments@ cancel notify; refund-email extra-recipient | BA rows | 24.15 OQ-1 / 24.6 OQ-6 |
