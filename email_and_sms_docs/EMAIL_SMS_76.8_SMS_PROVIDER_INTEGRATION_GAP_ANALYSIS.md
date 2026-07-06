@@ -14,13 +14,13 @@
 
 This document lists the blockers and ambiguities that must be confirmed with the BA and client **before** any implementation of Story 76.8 begins. It is a decision-ready "questions to resolve" register: each item states what the story requires, what the codebase actually provides today (with file:line evidence), the resulting gap, why it blocks build, and the precise question to put to the owner.
 
-It is **not** an implementation plan, and it is **not** the dynamic-scheduling track — SMS/email scheduling is designed separately and is out of scope here. This document covers only the provider-integration and SMS-dispatch surface of 76.8.
+It is **not** an implementation plan, and it is **not** the dynamic-scheduling track — SMS/email scheduling is designed separately and is out of scope here. This document covers only the provider-integration and SMS-dispatch surface of 76.8. The one place 76.8 and the scheduling track touch — the scheduler's SMS-skip gate — is reconciled in *Interaction with the scheduling track* below; no change to the scheduling plan is proposed.
 
 ---
 
 ## Story summary
 
-Story 76.8 calls for integrating a third-party SMS provider so that SMS-channel notification templates configured in the module are delivered through that provider per their trigger events. The provider itself is an explicit **client dependency** — the story states the selection and provisioning of the provider "depends on the client (Subject to client confirmation)" (story_sources.txt:6, :28, :58, :67). Substantive clauses cover system-level provider integration and configuration, dispatch of SMS-channel templates to resolved recipients (delegated to the Dynamic Recipient Resolution Engine, story 77.9), handling of the provider's delivery response, and logging of dispatch events. Almost every operative clause is tagged "(Subject to client confirmation)" or "(Subject to R&D)" (story_sources.txt:26-97), meaning the story text describes intent rather than settled requirements.
+Story 76.8 calls for integrating a third-party SMS provider so that SMS-channel notification templates configured in the module are delivered through that provider per their trigger events. The provider itself is an explicit **client dependency** — the story states the selection and provisioning of the provider "depends on the client (Subject to client confirmation)" (story_sources.txt:6, :28, :58, :67). **Update (Sprint 6): the provider has been identified as SendGrid.** Because SendGrid's API is email-only, the load-bearing follow-on question is now *how* SMS is sent within that vendor family (Twilio Programmable Messaging under the same parent account) — see SMS-01. Substantive clauses cover system-level provider integration and configuration, dispatch of SMS-channel templates to resolved recipients (delegated to the Dynamic Recipient Resolution Engine, story 77.9), handling of the provider's delivery response, and logging of dispatch events. Almost every operative clause is tagged "(Subject to client confirmation)" or "(Subject to R&D)" (story_sources.txt:26-97), meaning the story text describes intent rather than settled requirements.
 
 ---
 
@@ -43,6 +43,16 @@ What already exists that 76.8 would build on:
 
 ---
 
+## Interaction with the scheduling track (alignment)
+
+The dynamic-scheduling track (stories 76.6 / 77.8) is designed to ship **without** SMS execution — it defers the SMS provider (Known-Issue #2) and implements the deferral mechanically: occurrences carry a denormalized `channel` column and a separate pass flips `channel='SMS'` rows to `SKIPPED "SMS provider not integrated"`, no send attempted (scheduling plan §4 item 10; story AC-15/16). Three consequences for 76.8 — alignment notes only, **no change to the scheduling plan or its companion docs is proposed**:
+
+- **Turning SMS on is a coordinated flip, not just new code.** When 76.8 delivers a working send path, the scheduler's SMS-skip pass is the gate that must be flipped to route scheduled SMS. The scheduling story frames this as "a send-time gate only — zero additional schema or story change" (AC-16). See **SMS-02**.
+- **That "zero schema change" claim is scoped to the *scheduling tables* — not the SMS delivery/audit/consent surface.** It holds for `notification_schedules` / `notification_schedule_occurrences`, but the gaps this document raises still require schema/design work *outside* those tables: an SMS-capable audit record (**SMS-05** — `NotificationLog` has no channel/number column), a consent/suppression model (**SMS-03**), and E.164 normalization (**SMS-11**). The two statements are consistent once the scope is read correctly; this note records that so the docs don't appear to contradict.
+- **The client has already named specific scheduled SMS templates.** The scheduling story cites client-requested scheduled SMS — "Workshop Confirmation SMS" (−24h) and a product-question SMS — but both anchor on the **event/workshop anchors the scheduling build defers**, so they are not dispatchable until those anchors *and* the SMS provider land. This is source material for **SMS-06** (which triggers send SMS).
+
+---
+
 ## Open questions — must confirm before implementation
 
 ### Blockers
@@ -57,15 +67,17 @@ What already exists that 76.8 would build on:
 | **Question** | **Is 76.8 in scope to build actual SMS sending this sprint, or does it remain storage/edit-only (send path stays gated) as agreed on 2026-06-03? If pulled forward, has the provider dependency (SMS-01) been resolved?** |
 | **Owner** | BA |
 
-#### SMS-01 — Which SMS provider, and who provisions/owns the account?
+> **Scheduling alignment:** the scheduling build already contains the SMS gate — occurrences materialize then `SKIPPED "SMS provider not integrated"` (scheduling plan §4 item 10). Pulling 76.8 forward means flipping that gate, so the scope answer here coordinates with the scheduler, not just this module.
+
+#### SMS-01 — Provider named (SendGrid): confirm the SMS-send mechanism and account ownership
 | | |
 |---|---|
-| **Requirement** | "The specific SMS provider is a client dependency; the selection and provisioning of the provider depends on the client. (Subject to client confirmation)" (story_sources.txt:28; restated :58, :67). Concise AC: "Integrate an SMS provider (Client dependency on provider)" (:6). |
-| **Codebase reality** | No SMS SDK installed anywhere — only `@sendgrid/mail ^8.1.6`; grep for `twilio\|nexmo\|vonage\|plivo` across all five `src/` trees returns zero. No `TWILIO_*`/`SMS_*` env keys exist (evidence:sms §2, §8). |
-| **The gap** | The single load-bearing unknown — which provider (Twilio / Vonage / Plivo / other), who provisions and pays, and what commercial/region plan — is entirely unresolved; the 7-message client thread never names one. |
-| **Why it blocks** | Every downstream decision (SDK/dependency, credential shape, sender identity, delivery-receipt mechanism, segmentation/cost) is provider-specific and cannot be designed or coded until the provider is named. Nothing can start. |
-| **Question** | **Which SMS provider will be used, and who provisions and owns the paid account (client-owned with credentials handed to us, or UIPL-provisioned)? Until this is named, 76.8 cannot begin.** |
-| **Owner** | Client |
+| **Requirement** | "The specific SMS provider is a client dependency; the selection and provisioning of the provider depends on the client. (Subject to client confirmation)" (story_sources.txt:28; restated :58, :67). Concise AC: "Integrate an SMS provider (Client dependency on provider)" (:6). **Update (Sprint 6): provider identified as SendGrid.** |
+| **Codebase reality** | SendGrid is already the **email** transport — `@sendgrid/mail ^8.1.6` with `SENDGRID_API_KEY` / `SENDGRID_FROM` (phone-validation.config.ts:19-28; worker mailer.service.ts). But **no SMS SDK/API exists**: grep for `twilio\|nexmo\|vonage\|plivo` across all five `src/` trees returns zero, and there are no `TWILIO_*`/`SMS_*` env keys (evidence:sms §2, §8). **SendGrid's API is email-only — it has no SMS send endpoint.** |
+| **The gap** | Naming "SendGrid" resolves the vendor family but **not** the SMS-send path. SendGrid (a Twilio company) does not send SMS through its own API — A2P SMS in that ecosystem is **Twilio Programmable Messaging**. It must be confirmed whether SMS is sent via the **Twilio Messaging API under the same parent/billing account as the existing SendGrid** (the likely intent — a new `twilio` SDK + Account SID / Auth Token + a Messaging Service or from-number), or via some other arrangement. Account ownership/provisioning (client-owned credentials handed to us vs UIPL-provisioned) is still open. |
+| **Why it blocks** | The SDK, credential shape, sender identity (SMS-08), delivery-receipt mechanism (SMS-09), and segmentation/cost (SMS-10 / SMS-14) all hinge on this being the **Twilio Messaging API, not the SendGrid email API**. `@sendgrid/mail` cannot send SMS; the `twilio` integration is a distinct dependency that cannot begin until the mechanism is confirmed. |
+| **Question** | **Since SendGrid's API is email-only, confirm SMS is sent via Twilio Programmable Messaging (SendGrid's parent) under the same account — i.e. add the `twilio` SDK with Account SID / Auth Token / Messaging Service — and confirm who provisions/owns that account and the sending number (client-owned credentials handed to us, or UIPL-provisioned).** |
+| **Owner** | Client/BA |
 
 #### SMS-15 — How do SMS templates come into existence, and what is the SMS `channel_config` contract?
 | | |
@@ -97,6 +109,8 @@ What already exists that 76.8 would build on:
 | **Question** | **Should SMS dispatch reuse `NotificationLog` with new `channel` + phone/recipient columns (admin-owned migration, propagated to the other repos via `db push`), or a separate SMS log table? The current single `email` column cannot record an SMS destination.** |
 | **Owner** | BA |
 
+> **Scheduling alignment:** the scheduling story's "zero additional schema change to enable SMS" (AC-16) refers to the scheduling tables only; this `NotificationLog` change is on the delivery/audit surface and is still required.
+
 #### SMS-04 — Where SMS credentials/config live (and any config UI)
 | | |
 |---|---|
@@ -107,6 +121,8 @@ What already exists that 76.8 would build on:
 | **Question** | **Where should SMS provider credentials/config live — env + AWS Secrets (mirroring SendGrid), a DB config row, or an admin-managed provider-config screen? If a config UI is exposed, confirm it is restricted to Admin role/permissions.** |
 | **Owner** | BA |
 
+> **Provider update (SendGrid → Twilio SMS):** the env + AWS Secrets pattern already used for `SENDGRID_API_KEY` is the natural home, but Twilio SMS needs a *different* secret set (Account SID, Auth Token, Messaging Service SID / from-number) — so this is new config to provision regardless of the shared vendor family.
+
 #### SMS-06 — Which triggers send SMS, to whom, and additive-vs-replaces email
 | | |
 |---|---|
@@ -116,6 +132,8 @@ What already exists that 76.8 would build on:
 | **Why it blocks** | Without the trigger→SMS-recipient list and the additive-vs-replaces rule, we cannot seed SMS templates, wire dispatch call sites (which currently send one email per trigger), or scope the work. A wrong assumption seeds the wrong triggers, targets wrong numbers, or double-notifies. |
 | **Question** | **Which specific trigger events should send SMS (vs email only), who is the SMS recipient for each, and does an SMS fire in addition to or instead of that trigger's email? Should the existing dormant `Product.product_purchased_sms_enabled` + phone-number flag become the first live SMS trigger, or do we build a generic engine independent of it?** |
 | **Owner** | BA |
+
+> **Scheduling alignment:** the scheduling story already names client-requested scheduled SMS (Workshop Confirmation −24h, product-question SMS), both on deferred event/workshop anchors — useful input to the trigger→SMS list, though not dispatchable until those anchors and the provider land.
 
 #### SMS-07 — Phone-number source & recipient-resolution boundary vs 77.9
 | | |
@@ -139,6 +157,8 @@ What already exists that 76.8 would build on:
 | **Question** | **What sender identity will SMS use (dedicated long code / toll-free / short code / alphanumeric sender ID), is it a single global originator or per-template, and who handles the required carrier registration (A2P 10DLC / toll-free verification)?** |
 | **Owner** | Client |
 
+> **Provider update (SendGrid → Twilio SMS):** in the Twilio ecosystem the sender identity is a Messaging Service SID or a provisioned from-number (long code / toll-free / short code) with A2P 10DLC (or toll-free) registration — none provisioned yet. Naming the provider narrows the options but the number and its registration still must be procured.
+
 #### SMS-09 — Delivery-receipt handling, retry & failure policy
 | | |
 |---|---|
@@ -148,6 +168,8 @@ What already exists that 76.8 would build on:
 | **Why it blocks** | A webhook approach requires a new public callback endpoint + provider signature verification + a status-update path, architecturally different from the synchronous email flow. Choosing wrong forces rework of dispatch and log-update design. |
 | **Question** | **How should SMS delivery outcomes be captured — an asynchronous provider delivery-receipt webhook (needs a new callback endpoint) or status polling — and what is the retry/failure policy (max retries, retryable error classes, final status transitions)?** |
 | **Owner** | BA |
+
+> **Provider update (SendGrid → Twilio SMS):** Twilio Programmable Messaging exposes asynchronous **status-callback webhooks** (`queued → sent → delivered / undelivered / failed`), so the concrete mechanism would be a Twilio status webhook + a new signed callback endpoint — resolving the "webhook vs polling" half of this question; the retry/failure policy still needs defining.
 
 #### SMS-10 — SMS body rendering, length/segmentation & unicode
 | | |
@@ -198,7 +220,7 @@ What already exists that 76.8 would build on:
 Ready to paste into an email to the client/BA. Each tagged with its owner.
 
 1. **[BA]** Is 76.8 in scope to build actual SMS sending this sprint, or does it remain storage/edit-only (send path stays gated) as agreed on 2026-06-03? If pulled forward, has the provider dependency (Q2) been resolved? *(SMS-02)*
-2. **[Client]** Which SMS provider will be used, and who provisions and owns the paid account (client-owned with credentials handed to us, or UIPL-provisioned)? Until this is named, 76.8 cannot begin. *(SMS-01)*
+2. **[Client/BA]** Provider named as **SendGrid** — but SendGrid's API is email-only. Confirm SMS is sent via Twilio Programmable Messaging (SendGrid's parent) under the same account (`twilio` SDK + Account SID / Auth Token / Messaging Service), and confirm who provisions/owns that account and the sending number. *(SMS-01)*
 3. **[BA]** How do SMS templates come into existence for the send path — seed predefined SMS rows and/or unlock predefined-SMS create (custom SMS stays out of scope)? And define the SMS `channel_config` contract (sender_id / originating number / any segment metadata). *(SMS-15)*
 4. **[Client]** What is the SMS consent/opt-in policy (which entity holds consent, is prior express consent required before sending)? Must we persist a suppression list honoring provider-reported opt-outs and enforce TCPA quiet-hours? *(SMS-03)*
 5. **[BA]** Should SMS dispatch reuse `NotificationLog` with new `channel` + phone/recipient columns (admin-owned migration, propagated via `db push`), or a separate SMS log table? *(SMS-05)*

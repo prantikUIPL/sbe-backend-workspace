@@ -12,7 +12,7 @@
 
 This document lists the open blockers and ambiguities that must be confirmed with the BA and/or client **before** engineering starts building Story 77.9. Each item pairs the written requirement (V2 row 20 / client feedback) against what the current codebase actually does, states why the mismatch blocks a clean build, and poses a single decision-ready question. It is intended to be worked through in a BA/client session; the "Consolidated question checklist" at the end can be pasted straight into an email.
 
-This is **not** a design or scheduling document. The dynamic-scheduling / follow-up track is designed separately; DRR only intersects it at one point (see DRR-13), and that intersection is called out as a question rather than resolved here.
+This is **not** a design or scheduling document. The dynamic-scheduling / follow-up track (stories 76.6 / 77.8, designed under `email_sms_scheduling_plan_and_supporting_docs/`) is designed separately; because that design has already **pre-decided parts of DRR**, the two tracks are reconciled in *Interaction with the scheduling track* below, and the one genuine spec conflict is carried in DRR-13. No change to the scheduling plan or its companion docs is proposed here.
 
 ## Story summary
 
@@ -37,6 +37,15 @@ What already exists that the story builds on:
 - **Dedup.** `dedupeEmails` (`notification-template.service.ts:109-119`) is applied only to cc/bcc within-field on write (`:273-274, :387-389`); `to_recipients` is not deduped and there is no cross-field dedup.
 - **No group / consent concepts.** No group / distribution-list / recipient-list-source model exists; the only multi-recipient precedents are flat `String[]` columns (Product notification arrays, `schema.prisma:1291`) and `CompanyLeadEmail` (PPL-scoped, `schema.prisma:1123-1136`). No consent/opt-in/opt-out or per-recipient permission model exists in any of the five schemas.
 
+## Interaction with the scheduling track (alignment)
+
+DRR (77.9) and the dynamic-scheduling track share the send path, so their designs must stay consistent. The scheduling plan **explicitly defers DRR (Known-Issue #3)** and is built to ship *without* it — which means it has already taken positions that pin several DRR items. These are alignment notes only; **no change to the scheduling plan or its companion docs is proposed** (the affected items below carry a "Scheduling alignment" line).
+
+- **A restricted resolver already exists in the scheduling design.** For scheduled sends the plan resolves recipients only from a **column on the anchor row** — `recipient_source` (a bare column or one documented relation hop, validated against a per-anchor allow-list) plus `replacements_map` (fixed named transforms, not an expression language) — scheduling plan §2.1 / §4 item 3. Token recipients (`{salesperson}`, `{all speaker emails}`) are **out of scope there and SKIP with reason "recipient requires DRR (#3)"** (plan §4 item 3, AC-21). **DRR is the generalization of that resolver**, and building it is what "unlocks" those skipped scheduled sends. DRR-01 / DRR-02 / DRR-03 stay open, but their implementation should *extend the scheduling allow-list*, not stand up a parallel mechanism.
+- **The scheduling build introduces the first send path that reads template recipient config** — a by-id `MailerService.sendFromTemplate(notificationTemplateId)` dispatch that replays a materialized `recipients_snapshot` (`{to, cc, bcc, replacements, from_name, reply_to}`), plan §4 item 9. That settles the **scheduled** path's source-of-truth (a snapshot), so the live-trigger path is the only part **DRR-05** still needs answered.
+- **Resolve-timing is where the two specs genuinely conflict — see DRR-13.** 77.9 says "resolve at send time using the most current data"; the scheduling design resolves at **materialize / capture time** and replays the snapshot verbatim, never re-resolving at dispatch.
+- **Fallback and audit have scheduling precedents.** Null/unresolvable recipient → occurrence `SKIPPED` + logged (plan §4 item 3) informs **DRR-06**; the occurrence→`NotificationLog` linking + SKIP-reason model informs **DRR-10**.
+
 ## Open questions — must confirm before implementation
 
 ### Blockers
@@ -54,6 +63,8 @@ What already exists that the story builds on:
 | **Owner** | BA |
 
 > **Question:** At send time, what is the authoritative recipient source — the template's stored `channel_config`, the existing call-site-computed recipients, or a merge? And are predefined templates (which store no `channel_config`) in scope for DRR, or is DRR custom-email only?
+>
+> **Scheduling alignment:** the scheduling build adds the first consumer that reads template recipient config — a by-id `sendFromTemplate` replaying a materialized `recipients_snapshot` (scheduling plan §4 item 9). That settles the *scheduled* path's source of truth (a snapshot); this question remains open only for the *live-trigger* path.
 
 ---
 
@@ -156,6 +167,8 @@ What already exists that the story builds on:
 | **Owner** | BA |
 
 > **Question:** Confirm the fallback for an unresolvable dynamic recipient: skip-and-log, substitute a default address (if so, which one), or abort. And confirm a dispatch resolving to zero valid recipients is aborted (not sent), and how that outcome is surfaced/audited.
+>
+> **Scheduling alignment:** the scheduling design already applies "null / unresolvable recipient → occurrence `SKIPPED` + logged" for its column-based resolver (scheduling plan §4 item 3). Confirming the same skip-and-log default for DRR keeps the two tracks consistent.
 
 ---
 
@@ -247,17 +260,17 @@ What already exists that the story builds on:
 
 ---
 
-#### DRR-13 — Interaction with scheduling (deferred track): resolve at fire time, not enqueue
+#### DRR-13 — Resolve-timing conflict with the scheduling design (snapshot-at-materialize vs most-current-at-send)
 
 | | |
 |---|---|
-| **Requirement** | V2 row 20 Resolution Timing (`story_sources.txt:401`): resolve at send time using the most current data, not at the time of template configuration. |
-| **Codebase reality** | The designed scheduler dispatches via `MailerService.sendFromTemplate` (OUTSTANDING_ITEMS §6) and is a separate deferred track from DRR. For a scheduled/follow-up send the gap between config time and actual send can be days (`client_feedback.txt:204-208` cites time-delay triggers). |
-| **The gap** | For scheduled/follow-up sends, "most current data at send time" means re-resolving at the deferred execution moment (salesperson may have changed, contact removed). Whether the resolver runs at enqueue time or at the scheduled fire time is unspecified, as is who owns wiring DRR into the scheduler's dispatch hook. |
-| **Why it blocks** | If resolution runs at enqueue instead of fire time, a scheduled email sent days later goes to stale recipients — violating the AC. The integration point between the two separately-built tracks must be agreed or one will not call the other. |
+| **Requirement** | V2 row 20 Resolution Timing (`story_sources.txt:401`): resolve at send time using the **most current data**, not at the time of template configuration. |
+| **Codebase reality** | The scheduling track is already designed with the **opposite** timing: recipients are resolved at **materialize time** (ANCHOR_RELATIVE) or **send-site capture** (FOLLOW_UP), written to `recipients_snapshot`, and *"the dispatch poller replays the captured snapshot — it never re-resolves recipients dynamically"* (scheduling plan §4 items 3/8; AC-21). For a scheduled/follow-up send the gap between snapshot and actual fire can be days (`client_feedback.txt:204-208` cites time-delay triggers). The plan itself flags the trade-off — snapshot PII retention vs a re-lookup at fire time — as an open item (plan §9). |
+| **The gap** | 77.9's "most current data at send time" **directly conflicts** with the scheduling design's snapshot-then-replay approach for scheduled sends: a salesperson reassigned, or a contact removed, after materialize would still receive the scheduled email. For *immediate* (live-trigger) sends there is no conflict — DRR resolves inline. The conflict is confined to scheduled / follow-up dispatches, and the resolution must not require changing the already-designed scheduler. |
+| **Why it blocks** | The two tracks share the send path; left unreconciled, a DRR built to "always re-resolve at send" contradicts a scheduler built to "replay the snapshot." One behavior must be chosen for scheduled sends before either track is coded against the other. |
 | **Owner** | BA |
 
-> **Question:** For scheduled/follow-up dispatches, must recipient resolution run at the actual fire time (not at enqueue), and which track owns invoking the DRR resolver from the scheduler's `sendFromTemplate` hook?
+> **Question:** For scheduled / follow-up dispatches, is the scheduling design authoritative — recipients come from the materialize-time `recipients_snapshot` and are **not** re-resolved at fire time (accepting possible staleness, matching what is already designed) — or must 77.9 re-resolve at the actual fire time (which would require reopening the scheduler's dispatch design)? Immediate live-trigger sends resolve inline at send time regardless.
 
 ---
 
@@ -293,7 +306,7 @@ Ready to paste into an email to the BA/client. Each question is tagged with its 
 12. **[Client] (DRR-08)** Confirm the cross-field dedup rule: which field wins when an address appears in more than one of To/CC/BCC (To > CC > BCC?), is matching case-insensitive/normalized, and should `to_recipients` also be deduped within-field?
 13. **[BA/Client] (DRR-16)** Is "vendor emails pulled from show details" a required dynamic source for 77.9 (a fourth token), or deferred/out of scope? If in scope, confirm the source field (`Shows.venue_manager_emails` etc.) and that the comma-joined string is split into individual recipients.
 14. **[BA] (DRR-11)** Define the accepted config-time entry grammar (exact token/group literals to allow past `IsEmail`) and confirm send-time behavior when a resolved address is not RFC 5322 valid — treat as unresolved under the fallback rule?
-15. **[BA] (DRR-13)** For scheduled/follow-up dispatches, must resolution run at the actual fire time (not enqueue), and which track owns invoking the DRR resolver from the scheduler's `sendFromTemplate` hook?
+15. **[BA] (DRR-13)** Resolve-timing conflict: for scheduled/follow-up sends, is the scheduling design authoritative (recipients replayed from the materialize-time snapshot, **not** re-resolved at fire time — matching what is built), or must 77.9 re-resolve at fire time (reopening the scheduler's dispatch design)? Immediate live-trigger sends resolve inline.
 16. **[Client] (DRR-12)** Should attaching internal Gmail groups and the `{main/all customer contacts}` tokens be restricted to specific admin roles, or available to any admin who can create a custom template? Any privacy constraint on exposing group membership / bulk customer contacts?
 
 ## Already settled — not blocking
