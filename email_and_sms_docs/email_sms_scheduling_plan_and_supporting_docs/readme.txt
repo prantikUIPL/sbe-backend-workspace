@@ -1,6 +1,6 @@
 Email & SMS Scheduling — Plan & Supporting Docs
 
-Confluence (SBE - Admin Panel → Email and SMS Scheduling):
+Confluence (SBE - Admin Panel → Email and SMS Scheduling, Dynamic Receipient Resolution Engine, Integrate an SMS provider):
   Predefined: https://unifiedinfotech.atlassian.net/wiki/spaces/SBE/pages/3859742741/SBE+-+Admin+Panel#Email-and-SMS-Scheduling
   Custom:     https://unifiedinfotech.atlassian.net/wiki/spaces/SBE/pages/3859742741/SBE+-+Admin+Panel#Email-and-SMS-Scheduling.1
 
@@ -17,3 +17,5 @@ Files:
   9. EMAIL_SMS_SCHEDULING_FLOWCHART.svg       - End-to-end runtime flow, config to dispatch.
  10. EMAIL_SMS_Consolidated_Template_List.xlsx - 52-row consolidated template list with provenance + scheduling legend.
  11. EMAIL_SMS_KNOWN_ISSUES.md                 - List of known issues uptill sprint 4 development for EMAIL and SMS management module
+ 12. EMAIL_SMS_77.9_DYNAMIC_RECIPIENT_RESOLUTION_GAP_ANALYSIS.md - Story Gap Analysis for DRR
+ 13. EMAIL_SMS_76.8_SMS_PROVIDER_INTEGRATION_GAP_ANALYSIS.md - Story Gap Analysis for SMS Integration
