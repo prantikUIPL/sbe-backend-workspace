@@ -15,9 +15,12 @@ sequenceDiagram
         alt any installment processing
             Svc-->>C: 409 CHARGE_IN_FLIGHT
         else
-            Svc->>DB: flip Cancelled + cascade installments + releaseForOrder + audit
+            Svc->>DB: flip Cancelled + cascade installments + releaseForOrder + gift-cert restore (SBE-1179) + audit
             Svc->>DB: COMMIT
             Svc->>Ref: post-commit refund (full/partial)
-            Svc-->>C: 200 OrderCancelResponseDto (+ refund legs / stated refund error)
+            opt send_notification
+                Svc->>C: order_canceled email (+ gift_certificate_restored to holder)
+            end
+            Svc-->>C: 200 OrderCancelResponseDto (+ refund legs, + gift_certificate_restore)
         end
     end

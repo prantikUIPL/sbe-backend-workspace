@@ -1,6 +1,6 @@
 # Admin Cancellation — contract
 
-> Exact request/response contract for the **[Admin Cancellation](../admin-cancellation.md)** capability. Authoritative source: [`admin-backend-api/src/admin/orders/orders.controller.ts`](../../../admin-backend-api/src/admin/orders/orders.controller.ts) (`cancelOrder`), service [`services/order-cancel.service.ts`](../../../admin-backend-api/src/admin/orders/services/order-cancel.service.ts), DTO `dto/order-cancel.dto.ts`.
+> Exact request/response contract for the **[Admin Cancellation](../admin-cancellation.md)** capability. Authoritative source: [`admin-backend-api/src/admin/orders/orders.controller.ts`](../../../admin-backend-api/src/admin/orders/orders.controller.ts) (`cancelOrder`), services [`services/order-cancel.service.ts`](../../../admin-backend-api/src/admin/orders/services/order-cancel.service.ts) + [`services/gift-certificate-restore.service.ts`](../../../admin-backend-api/src/admin/orders/services/gift-certificate-restore.service.ts) (SBE-1179), DTO `dto/order-cancel.dto.ts`.
 
 ## Request flow
 ![Admin Cancellation sequence](admin-cancellation.svg)
@@ -15,7 +15,7 @@
 
 **Preview (no `confirm`)** — `OrderCancelPreviewDto`: the installments that would be canceled, reservations that would be released, refund legs (newest-first), and the total refund. **Nothing is written.**
 
-**Execute (`confirm=true`)** — `OrderCancelResponseDto`: the canceled-order summary + the refund legs actually processed. If the refund step fails, the order **stays canceled** and the response states the exact refund state.
+**Execute (`confirm=true`)** — `OrderCancelResponseDto`: the canceled-order summary + the refund legs actually processed. If the refund step fails, the order **stays canceled** and the response states the exact refund state. **(SBE-1179)** carries a `gift_certificate_restore` block (`gift_certificate_purchase_id`, `restored_amount`, `remaining_balance`) when the cancellation returned value to a gift certificate; null/omitted otherwise.
 
 ## Status codes
 

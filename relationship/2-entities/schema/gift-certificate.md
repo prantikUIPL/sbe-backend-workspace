@@ -45,8 +45,9 @@ Applying part of a purchase's balance to an **Order**.
 | `gift_certificate_purchase_id` | int | FK→GiftCertificatePurchase | no | Purchase drawn down (restrict) |
 | `order_id` | int | FK→[Order](order.md) | no | Order the balance is applied to (**Restrict** — can't delete an order with a redemption) |
 | `company_id` | int | FK→[Company](company.md) | no | Redeemer (cascade) |
-| `amount` | decimal(10,2) | — | no | Amount applied in this redemption |
-| `remaining_amount` | decimal(10,2) | — | no | Purchase balance after this redemption |
+| `amount` | decimal(10,2) | — | no | Amount applied (always positive; direction is read from `type`, never the sign) |
+| `remaining_amount` | decimal(10,2) | — | no | Purchase balance after this row |
+| `type` | enum `GiftCertificateRedeemType` | — | no | **(SBE-1179)** `expense` (checkout draw-down) \| `refund` (admin cancel/refund restore); default `expense` |
 | `created_at` / `updated_at` | timestamptz | — | no | Timestamps |
 
 ## Relations
@@ -60,7 +61,7 @@ Applying part of a purchase's balance to an **Order**.
 | GiftCertificateRedeem → [Company](company.md) | N→1 | Cascade | Redeemer |
 
 ## Indexes
-GiftCertificate: unique on `name`. GiftCertificatePurchase: unique on `uuid`. GiftCertificateRedeem: composite unique on `(order_id, gift_certificate_purchase_id)` — one redemption per purchase per order.
+GiftCertificate: unique on `name`. GiftCertificatePurchase: unique on `uuid`. GiftCertificateRedeem: **no uniqueness** — indexed on `order_id` and `(order_id, type)`. **(SBE-1179)** an order carries one `expense` redemption plus zero or more `refund` restorations (admin cancel/partial refunds), so the former `@@unique([order_id])` was dropped.
 
 ---
 *Regenerate diagram: `mmdc -i gift-certificate.mmd -o gift-certificate.svg -b white -p pptr.json -c mermaid-config.json`*

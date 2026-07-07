@@ -34,8 +34,9 @@ erDiagram
         int gift_certificate_purchase_id FK "purchase drawn down (restrict)"
         int order_id FK "order applied to (restrict)"
         int company_id FK "redeemer (cascade)"
-        decimal amount "applied this redeem"
+        decimal amount "applied this row (always positive)"
         decimal remaining_amount "purchase balance after"
+        enum type "SBE-1179: expense | refund (default expense)"
         datetime created_at
         datetime updated_at
     }

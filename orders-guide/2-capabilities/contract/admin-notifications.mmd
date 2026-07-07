@@ -1,15 +1,18 @@
 sequenceDiagram
     autonumber
     participant Cancel as Cancel / Refund flow
-    participant M as Mailer (self-seeded templates)
+    participant N as OrderNotificationService
     participant Cron as background-worker cron
     participant DB as Prisma / Postgres
     participant Cust as Customer inbox
-    Cancel->>M: send_notification=true → send one email (24.11)
-    M-->>Cust: cancellation / refund email
-    loop scheduled pass (24.15)
+    participant Holder as Certificate holder
+    Cancel->>N: post-commit, send_notification=true (errors swallowed)
+    N-->>Cust: order_canceled (cancel) | order_refunded (refund)
+    opt gift-cert restored (SBE-1179)
+        N-->>Holder: gift_certificate_restored
+    end
+    loop scheduled pass (24.15, worker mailer)
         Cron->>DB: find installments due/overdue
-        Cron->>M: send reminder (idempotent per window)
-        M-->>Cust: payment reminder email
+        Cron-->>Cust: payment reminder email (idempotent per window)
     end
     Note over Cron: dev-only POST /manual-trigger/payment-reminders/run runs a pass on demand

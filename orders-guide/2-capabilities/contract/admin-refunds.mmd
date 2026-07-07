@@ -18,4 +18,11 @@ sequenceDiagram
         Svc->>DB: write Refund ledger row (no money moves)
     end
     Svc->>DB: update installment/order status + audit
-    Svc-->>C: 201 per-leg outcomes
+    opt order-level refund spills past card cap (SBE-1179)
+        Svc->>DB: GiftCertificateRestoreService.restoreForOrder (card-first, own tx)
+        Note over Svc,DB: writes a `refund` redeem row, tops up the voucher
+    end
+    opt send_notification (default true)
+        Svc->>C: order_refunded email (+ gift_certificate_restored to holder)
+    end
+    Svc-->>C: 201 per-leg outcomes (+ gift_certificate_restore)

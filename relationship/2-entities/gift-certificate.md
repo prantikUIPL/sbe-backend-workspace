@@ -18,8 +18,8 @@ A **gift-certificate** feature, modelled as **three** tables:
 
 ## Why it matters / gotchas
 - **`Restrict` on the Order link is why you can't delete an Order** that has a gift-certificate redemption against it.
-- `(order_id, gift_certificate_purchase_id)` is unique on the redeem — a given purchase is redeemed at most once per order.
-- Balance tracking is via `remaining_amount` on both the purchase and each redeem.
+- A redeem row carries a `type` (**SBE-1179**): `expense` (checkout draw-down) or `refund` (admin cancel/refund restore). Amounts are always positive; direction comes from `type`, not the sign.
+- The redeem is **not** unique per order — an order has one `expense` row plus zero or more `refund` restorations (the old `@@unique([order_id])` was dropped). Balance tracking is via `remaining_amount` on both the purchase and each redeem.
 
 ## Next
 [Order](order.md) · [Company](company.md)
