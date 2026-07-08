@@ -36,6 +36,8 @@
 >
 > **Fix:** cleanest is to **defer** the "unanswered product questions" recurring template alongside the other deferred dependencies (matching how the show/workshop anchors are already deferred). If it *must* ship, define the enumerating query and require an `end_window_at` bound until the answer table lands. Reviewer recommends deferring — "it keeps Phase 4 honest."
 
+> **📦 WHERE IT LANDED — (combined-release docs, 2026-07-08)** — The reviewer's "defer it" option was adopted: the "nag until the question is answered" reminder does **not** ship in this release, but the machinery that would run it does. [Addendum §4](../email_and_sms_docs/email_sms_combined_release_docs/EMAIL_SMS_SCHEDULING_FIXES_ADDENDUM.md) defers the template alongside the show/workshop anchors on the plan's §9 deferred list ("engine supports it, data model does not yet"), while the per-instance RECURRING *mechanics* — per-instance `anchor_instance_ref`, one-at-a-time roll-forward, stop-on-resolve — still ship in Phase 4, exercised by tests. Hard rule while `QUESTION_ANSWERED` stays unimplemented: any rule carrying that stop-condition MUST also carry an `end_window_at` / `repeatCount` bound. The final call is **ADD-Q3** in the [open-questions register](../email_and_sms_docs/email_sms_combined_release_docs/EMAIL_SMS_COMBINED_RELEASE_OPEN_QUESTIONS.md) (Tier 2, owner: BA) — default if unanswered: defer. If the business overrides to must-ship, the answer table and the instance-discovery query must be specced in writing first.
+
 ---
 
 ## Kind 3 — FOLLOW_UP ("a chase-up series")
@@ -58,11 +60,13 @@
 >
 > **Fix:** make catch-up **selectable** — a per-kind default (proximity reminders skip; payment/follow-up send anyway) or a per-rule `catchup_policy` of `SKIP`/`SEND`, with 24 h as the skip threshold. **At minimum, log/alert every occurrence the sweep skips**, so a silent mass-skip after an outage is visible, not invisible.
 
+> **📦 WHERE IT LANDED — (combined-release docs, 2026-07-08)** — Adopted in full: when the mailroom reopens, it now checks each standing instruction's own late-mail rule — and shouts about every letter it bins. [Addendum §3](../email_and_sms_docs/email_sms_combined_release_docs/EMAIL_SMS_SCHEDULING_FIXES_ADDENDUM.md) adds a `catchup_policy` column to `notification_schedules` — enum `NotificationCatchupPolicy { SKIP, SEND }`, **NOT NULL `@default(SKIP)`** (admin migration + 4× schema mirror + `db push`). The sweep auto-SKIPs stale PENDING rows only for `SKIP` rules; `SEND` rules dispatch late through the normal path, where the stop-condition pass and live-anchor reconcile run first — so a late send against an already-resolved anchor is CANCELLED, not delivered. The 24 h `schedule_dispatch_max_catchup_minutes` default is unchanged as the skip threshold. Alerting ships too: a warn-level log line per skipped occurrence plus one aggregate line per tick ("catch-up sweep: skipped N occurrences across M schedules"). Lands at spine milestone MS4 (the column may ride the MS2 Phase-1 migration). One open decision, **ADD-Q2** in the [open-questions register](../email_and_sms_docs/email_sms_combined_release_docs/EMAIL_SMS_COMBINED_RELEASE_OPEN_QUESTIONS.md) (Tier 3, Tech Lead + BA): single default-SKIP with per-rule override, or additionally per-kind DTO defaults (proximity→SKIP, payment/follow-up→SEND) — default: the former, one explicit column and no hidden kind-based behavior.
+
 ---
 
 ## Summary of this file's review findings
 
-| ID | Severity | One line |
-|---|---|---|
-| S3 | Medium | One-size 24h catch-up can drop a legitimately-due send; make it per-kind/per-rule + alert on skips |
-| S4 | Medium | "RECURRING until answered" has no discovery query and a not-yet-modelled stop table — defer it |
+| ID | Severity | One line | Where it landed |
+|---|---|---|---|
+| S3 | Medium | One-size 24h catch-up can drop a legitimately-due send; make it per-kind/per-rule + alert on skips | Adopted — addendum §3: per-rule `catchup_policy` enum column (NOT NULL, default `SKIP`) + per-skip and aggregate alerting; ADD-Q2 tracks the per-kind-defaults variant |
+| S4 | Medium | "RECURRING until answered" has no discovery query and a not-yet-modelled stop table — defer it | Adopted (defer) — addendum §4: template deferred with the other deferred dependencies, mechanics still ship with tests; ADD-Q3 (BA, Tier 2) holds the final call |

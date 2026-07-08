@@ -54,4 +54,6 @@ The backfill promotes **zero** template rows (all 18 stay `false`). It *does* op
 
 > **🔎 THE REVIEW** — **approved, keep as-is.** Section 4 ("What is explicitly right") calls out by name: *"`is_schedulable` marked (not inferred), gated by the `supports_scheduling` trigger ceiling; all 18 seeded rows correctly false"* and *"by-id `notificationTemplateId` dispatch making known issue #21 immunity true by construction."* No change requested here.
 
+> **📦 WHERE IT LANDED — (combined-release docs, 2026-07-08)** — Nothing needed to land here: the two switches ship exactly as planned, untouched by the combined-release rework. The one nearby delta is the stop-reason tidy-up (**X1**): the Phase-1 migration now creates the stop-condition enum *without* `CART_CONVERTED` ([addendum §8](../email_and_sms_docs/email_sms_combined_release_docs/EMAIL_SMS_SCHEDULING_FIXES_ADDENDUM.md), applied at spine milestone MS2) — covered in [file 6](06_SMS_AND_LOOSE_ENDS.md).
+
 **This is one of the areas the reviewer told us *not* to second-guess.** The only nearby cleanup is a tidy-up to the list of stop-reasons (finding **X1**), covered in [file 6](06_SMS_AND_LOOSE_ENDS.md).
