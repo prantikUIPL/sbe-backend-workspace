@@ -45,6 +45,37 @@ AI compresses the **build effort by ~31%**. It does **not** compress the launch 
 
 ---
 
+## 1A. Aggressive floor — the minimum build hours, pushed hard
+
+The §1 "With AI" figure (≈305h) is a *realistic* plan number, not a floor. If the goal is the **absolute minimum backend build hours** — max AI leverage, buffers cut, integration/QA reduced to bare-minimum staging gate-proofs, absorption at its low end, strong devs already fluent in this codebase, and clean execution with **no rework** — the floor is **≈ 250 hours (with AI)**.
+
+| Scenario | Backend-only hours |
+|---|---|
+| Without AI, normal estimate | ≈ 438h |
+| Without AI, aggressive | ≈ 375h |
+| With AI, normal estimate | ≈ 304h |
+| **With AI, aggressive floor** | **≈ 250h** |
+
+The floor stacks two reductions — AI leverage *plus* trimming. Only AI compresses the greenfield/test-scaffolding bulk, which is why the with-AI floor drops much further than the without-AI one.
+
+**Aggressive per-line (the "With AI" column trimmed):**
+
+| Line | With AI (normal) | Aggressive floor |
+|---|---|---|
+| Scheduling engine | 134h | ~115h |
+| DRR | 88h | ~76h |
+| SMS | 45h | ~38h |
+| D2 schema fix | 7h | ~5h |
+| Release integration / staging proofs | 19h | ~12h |
+| Absorption (TBD) | 11h | ~8h (or defer) |
+| **Total** | **304h** | **≈ 250h** |
+
+**~110–120h of that floor is non-compressible.** Aggressive trimming works on the greenfield code, DTOs, seeders, admin CRUD, test scaffolding, and the D2 mechanical edits. It must **not** touch: shared-prod-DB migration safety (~15–20h, human-review-bound), the scheduling executor's concurrency correctness (~40h), the DRR engine core (~30h), or the staging gate-proofs for the SKIP-gate / live-send flips (~12h). Cutting those does not save time — it relocates the cost to a production incident.
+
+**The floor does not move the launch date (§5).** Even at 250h the release still waits on the three external clocks — 10DLC/Twilio registration, the BA's DRR-04 trigger→token matrix, and legal sign-off on SMS consent. Aggressive compression finishes the *code* ~3–4 weeks sooner; it does **not** ship the *release* sooner. The highest-leverage time-reduction move is starting 10DLC + the BA matrix + legal on **day one (MS0)** — not trimming dev hours.
+
+---
+
 ## 2. Breakdown by track
 
 | Track | Without AI | With AI | Basis |
