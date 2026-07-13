@@ -30,6 +30,7 @@ The two never share code. They share one Postgres DB and the same `Order` table.
 | **[Admin Refunds](2-capabilities/admin-refunds.md)** | Per-installment refund eligibility + issuing Manual or Stripe refunds against an order. |
 | **[Admin Cancellation](2-capabilities/admin-cancellation.md)** | Two-phase (preview → confirm) whole-order cancel that cascades installments, releases inventory, and refunds through the refund engine. |
 | **[Admin Notifications](2-capabilities/admin-notifications.md)** | The cancellation email (one per action) and the payment-reminder worker cron. |
+| **[Admin Permissions & RBAC Wiring](2-capabilities/admin-permissions-and-rbac.md)** *(cross-cutting)* | The 21 `orders.*` permission keys that gate every admin route, their 8 seeded permission groups (module `orders`), and how a role is granted them. |
 
 ## (c) "I want to… → which endpoint"
 
@@ -53,6 +54,8 @@ The two never share code. They share one Postgres DB and the same `Order` table.
 | Void one scheduled/failed installment | Admin | `POST /orders/:id/payments/:transaction_id/void` |
 | See refund options / issue a refund | Admin | `GET /orders/:id/refund-options` \| `POST /orders/:id/refunds` |
 | Cancel an order | Admin | `POST /orders/:id/cancel?confirm=true` |
+| See every order permission (flat) | Admin | `GET /permissions` (module `orders`) |
+| Grant order permissions to a role (grouped) | Admin | `GET` \| `POST /roles/:id/permission-groups` |
 
 ## (d) Terms you'll hit in the cards
 
@@ -67,6 +70,10 @@ The two never share code. They share one Postgres DB and the same `Order` table.
 - **Option-B invoice (exhibitor)** — the exhibitor invoice endpoint serves the order's **latest persisted `Invoice`** (invoices exist only after a successful payment; product-only), rather than composing one on the fly.
 - **Onsite booth contact** — the company's booth staffer for a given show, keyed `(company_id, show_id)`; surfaced per-show on both details aggregates, `null` when unset (no billing fallback). See `../relationship/2-entities/onsite-booth-contact.md`.
 - **Shared units (U1–U20)** — the admin epic's ledger of build units owned by one story and consumed by others (e.g. the C13 installment-row mapper, the refund primitive). See [diagrams/03-shared-units.svg](diagrams/03-shared-units.svg).
+- **Permission key (`orders.*`)** — one of 21 strings (e.g. `orders.view`, `orders.refund`, `orders.cancel`) seeded in `permission.seeder.ts`; each admin route carries a `@Permissions('orders.…')` decorator checked against these. See [Admin Permissions & RBAC Wiring](2-capabilities/admin-permissions-and-rbac.md).
+- **Permission group** — a named bundle of permission keys within a module, seeded in `permission-group.seeder.ts` and surfaced on the grouped **Role Permissions** screen. The `orders` module has **8** groups (`View Orders` root + 7 action groups). Selecting a group in the assign flow expands it to its keys.
+- **`depends_on` (permission group)** — a group's prerequisite group in the same module; resolved at assign time so enabling e.g. *Cancel Order* auto-pulls *View Orders*. Every `orders` action group depends on `View Orders`.
+- **Convention A (group module = permission module)** — the `orders` groups set the group `module` string equal to the permission `module` (`orders`), following the **booth-agreements** precedent rather than the prettified-label style (`Cart Management`, `PPL Order`).
 
 ## (e) Not built this sprint (so you don't go looking)
 

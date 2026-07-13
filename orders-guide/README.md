@@ -28,9 +28,9 @@ Same pedagogy as the [entity guide](../relationship/README.md), applied to behav
 
 Plus a **worked example** (Level 1): two concrete request→response scenarios narrated end-to-end are far stickier than a route table. And when you *do* need exact params and fields, the **contract view** (Level 2½) pairs a request-flow `sequenceDiagram` with a response **data dictionary** (every field: type, nullability, plain-English meaning), behind a 📋 link so the card stays about the *mental model*, not the field list. Each contract links back to the authoritative controller/service.
 
-## The 10 capability cards
+## The 10 capability cards (+ 1 cross-cutting)
 
-The two surfaces, split by what an admin vs an exhibitor can do. **Headline capabilities in bold.**
+The two surfaces, split by what an admin vs an exhibitor can do. **Headline capabilities in bold.** One extra **cross-cutting** card documents the RBAC layer that gates every admin route.
 
 **Exhibitor surface — Epic 13 (Order History), 3 read-only routes, JWT-guarded, company-scoped:**
 - **[Exhibitor Order Listing](2-capabilities/exhibitor-order-listing.md)** *(13.1 / 13.2 — `GET /orders`)*
@@ -45,6 +45,9 @@ The two surfaces, split by what an admin vs an exhibitor can do. **Headline capa
 - **[Admin Refunds](2-capabilities/admin-refunds.md)** *(24.9 — refund options + issue refund)*
 - **[Admin Cancellation](2-capabilities/admin-cancellation.md)** *(24.10 — two-phase cancel + refund + inventory release)*
 - **[Admin Notifications](2-capabilities/admin-notifications.md)** *(24.11 / 24.15 — cancellation email + payment-reminder cron)*
+
+**Cross-cutting — the access layer under every admin card:**
+- **[Admin Permissions & RBAC Wiring](2-capabilities/admin-permissions-and-rbac.md)** *(the 21 `orders.*` permission keys, their 8 seeded permission groups, and how a role gets them)*
 
 ## Five things that trip everyone up
 
