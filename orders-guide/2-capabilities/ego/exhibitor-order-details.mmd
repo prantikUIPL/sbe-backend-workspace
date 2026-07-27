@@ -1,14 +1,16 @@
 flowchart LR
     CAP(["Exhibitor Order Details"])
-    EP_GET["GET /orders/:orderId"]
-    EP_INV["GET /orders/:orderId/invoice"]
+    EP_GET["GET /orders/:orderId<br/>(product-gated, nested by show)"]
+    EP_INVL["GET /orders/:orderId/invoices<br/>(list)"]
+    EP_INV["GET /orders/invoices/:id<br/>(download by invoice id)"]
     SVC["OrderDetailsService<br/>+ order-details.helpers"]
-    ORDER["Order (company-scoped findFirst)"]
+    ORDER["Order (company + product scoped findFirst)"]
     ONSITE["OnsiteBoothContact<br/>(per show)"]
     PM["PaymentMethod / Invoice"]
-    DTO["OrderDetailsResponseDto"]
+    DTO["OrderDetailsResponseDto<br/>(shows[] + unassigned)"]
 
     CAP -->|"exposes"| EP_GET
+    CAP -->|"exposes"| EP_INVL
     CAP -->|"exposes"| EP_INV
     EP_GET -->|"handled by"| SVC
     SVC -->|"scoped read → 404"| ORDER
@@ -19,4 +21,4 @@ flowchart LR
     classDef ego fill:#ffe0b2,stroke:#e65100,stroke-width:3px,color:#000;
     classDef neighbor fill:#e3f2fd,stroke:#1565c0,color:#000;
     class CAP ego;
-    class EP_GET,EP_INV,SVC,ORDER,ONSITE,PM,DTO neighbor;
+    class EP_GET,EP_INVL,EP_INV,SVC,ORDER,ONSITE,PM,DTO neighbor;

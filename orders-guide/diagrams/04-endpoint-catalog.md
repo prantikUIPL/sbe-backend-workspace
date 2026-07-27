@@ -2,15 +2,16 @@
 
 The complete, dense reference: **every route** across both order epics, plus the catalog proposals that were **dropped / re-shaped / parked / blocked / out-of-scope** so you know why they don't exist. For the mental model, stay in the [capability cards](../2-capabilities/); this is the "I already know the pieces" lookup.
 
-Verified against the shipped controllers — [`admin-backend-api/src/admin/orders/orders.controller.ts`](../../admin-backend-api/src/admin/orders/orders.controller.ts) (22 live route handlers) and [`exhibitor-backend-api/src/orders/orders.controller.ts`](../../exhibitor-backend-api/src/orders/orders.controller.ts) (3 live routes).
+Verified against the shipped controllers — [`admin-backend-api/src/admin/orders/orders.controller.ts`](../../admin-backend-api/src/admin/orders/orders.controller.ts) (22 live route handlers) and [`exhibitor-backend-api/src/orders/orders.controller.ts`](../../exhibitor-backend-api/src/orders/orders.controller.ts) (4 live routes — invoice rework SBE-1146 2026-07-17 + details nesting SBE-1147 2026-07-26).
 
 ## Exhibitor surface — Order History (Epic 13, JWT-guarded, company-scoped)
 
 | # | Method | Path | Story | Permission/Auth | Capability |
 |---|---|---|---|---|---|
 | 1 | `GET` | `/orders` | 13.1 / 13.2 | JWT | [Exhibitor Order Listing](../2-capabilities/exhibitor-order-listing.md) |
-| 2 | `GET` | `/orders/:orderId` | 13.3 | JWT | [Exhibitor Order Details](../2-capabilities/exhibitor-order-details.md) |
-| 3 | `GET` | `/orders/:orderId/invoice` | 13.2-g / 13.3-s | JWT | [Exhibitor Order Details](../2-capabilities/exhibitor-order-details.md) |
+| 2 | `GET` | `/orders/:orderId` | 13.3 (nested-by-show + product-gated, SBE-1147) | JWT | [Exhibitor Order Details](../2-capabilities/exhibitor-order-details.md) |
+| 3 | `GET` | `/orders/:orderId/invoices` | 13.3-s (list, SBE-1146) | JWT | [Exhibitor Order Details](../2-capabilities/exhibitor-order-details.md) |
+| 4 | `GET` | `/orders/invoices/:id` | 13.2-g / 13.3-s (download by invoice id, SBE-1146; replaced `/orders/:orderId/invoice`) | JWT | [Exhibitor Order Details](../2-capabilities/exhibitor-order-details.md) |
 
 ## Admin surface — Order Management (Epic 24, permission-gated, all orders)
 

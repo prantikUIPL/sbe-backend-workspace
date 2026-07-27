@@ -7,14 +7,15 @@ sequenceDiagram
     C->>Ctl: GET /orders/:orderId (Bearer JWT)
     Ctl->>Svc: getOrderDetails(exhibitorId, orderId)
     Svc->>DB: resolve companyId
-    Svc->>DB: order.findFirst({ id, company_id, deleted_at:null })
-    alt not found / foreign
+    Svc->>DB: order.findFirst({ id, company_id, deleted_at:null, order_type:product })
+    alt not found / foreign / non-product
         DB-->>Svc: null
         Svc-->>C: 404
     else found
         Svc->>DB: paymentMethod.findMany (settled txns, by company)
         Svc->>DB: onsiteBoothContact.findMany({ company_id, show_id in shows })
-        Svc->>Svc: toDetails() — classify items, financial summary, onsite per show
-        Svc-->>Ctl: OrderDetailsResponseDto
+        Svc->>DB: order.findMany (child add-on purchases, by parent_order_id)
+        Svc->>Svc: toDetails() — group items by show (booths/add_ons/sponsorships + onsite_contact), unassigned bucket, financial summary
+        Svc-->>Ctl: OrderDetailsResponseDto (nested shows[])
         Ctl-->>C: 200
     end

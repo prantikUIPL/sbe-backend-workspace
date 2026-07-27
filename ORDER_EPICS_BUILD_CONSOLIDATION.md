@@ -5,10 +5,12 @@ Post-ship rewrite. **13.1/13.2/13.3 SHIPPED** (exhibitor-backend-api, SBE-1146 �
 ## Shipped — reuse targets on dev
 
 ### Order History (Epic 13) — exhibitor-backend-api, `src/orders/`
-Two routes only (no invoice/agreement/schedule sub-routes exist; swagger declares them intentionally absent — `orders.controller.ts:102-103`):
+Four routes on dev (this block predated the 13.x follow-ons; **updated 2026-07-27** — invoice PDF, gift-cert line, onsite contacts all shipped, and the endpoint was reworked twice: **invoice endpoints SBE-1146 2026-07-17** and **details nesting SBE-1147 2026-07-26**):
 
-- **GET /api/v1/orders** (13.1+13.2) — company-scoped paginated list, all order types incl. pending, derived payment_status/is_overdue/can_pay/shows[] (`orders.controller.ts:57,64`; `orders.service.ts:65,92-103`)
-- **GET /api/v1/orders/:orderId** (13.3) — ownership-404 aggregate: header, booths/add_ons/sponsorships, financial_summary, settled-only payments[], agreement block (`orders.controller.ts:90`; `order-details.service.ts:101-107,147-167`)
+- **GET /orders** (13.1+13.2) — company-scoped paginated list, product orders only (SBE-1621), derived payment_status/is_overdue/can_pay/shows[] (`orders.controller.ts:78`; `orders.service.ts`)
+- **GET /orders/:orderId** (13.3) — ownership-404 aggregate, **product-gated + NESTED BY SHOW (SBE-1147)**: `shows[]` each carrying its booths/add_ons/sponsorships + one onsite_contact, plus financial_summary, settled-only payments[], agreement, additional_purchases[].show, nullable `unassigned` bucket, per-line product_name/purchased_name, per-booth setup_fee/cleaning_fee (`orders.controller.ts:105`; `order-details.service.ts`, `order-details.helpers.ts`)
+- **GET /orders/:orderId/invoices** (13.3-s) — per-order invoice list, newest-first (SBE-1146)
+- **GET /orders/invoices/:id** (13.2-g/13.3-s) — download a specific invoice PDF by id; replaced the old latest-only `/orders/:orderId/invoice` (SBE-1146)
 
 | Reuse target | Where | Reused by |
 |---|---|---|
@@ -112,7 +114,7 @@ _Last updated 2026-07-02 from post-ship re-verification (13.x + 24.1–24.4 on d
 | Consumer (story · req) | Depends on | Provider (story · Jira) | Status | Notes |
 |---|---|---|---|---|
 | **13.3-t** Payment Schedule | salesperson plan **written + linked to Order**, then shown to exhibitor | OM **24.8** (producers SBE-1109/1111/1112, Sprint 5); exhibitor visibility [SBE-1154](https://unifiedinfotech.atlassian.net/browse/SBE-1154) (backlog, Prantik) | 🔵 | Re-verified: `CartPaymentPlan`/`CartPaymentScheduleEntry` cart-only, zero src consumers (schema-only, exhibitor schema:2865,2880). Option (b) confirmed deliverable now (PT rows written per installment, `payments.service.ts:261`). |
-| **13.3 ↔ 24.6** aggregate shape | shared order-aggregation pattern + installment projection | 13.3 (shipped) → 24.6 | 🔗 | Upgraded from ⁇: pattern-level reuse only (separate repos) — mirror 13.3's aggregate/`classifyOrderItems`/settled-only payments; prerequisite columns already in admin via migration `20260618120000_add_order_item_tree_and_cart_type`. Installment projection stays with OM-C13/24.8. |
+| **13.3 ↔ 24.6** aggregate shape | shared order-aggregation pattern + installment projection | 13.3 (shipped) → 24.6 | 🔗 | Upgraded from ⁇: pattern-level reuse only (separate repos) — mirror 13.3's aggregate/`classifyOrderItems`/settled-only payments; prerequisite columns already in admin via migration `20260618120000_add_order_item_tree_and_cart_type`. Installment projection stays with OM-C13/24.8. **Note (2026-07-27):** 13.3 was reworked **nested-by-show + product-gated (SBE-1147)** — if 24.6 wants the same grouping, mirror `groupClassifiedItemsByShow` (own `showProduct.show_id` else one hop up parent) + the `unassigned` bucket; the flat `classifyOrderItems` is still exported for the additional-purchases path. |
 | **13.2/13.3** lifecycle display | NEW enum values from OM write-side | OM **24.9** (`refund_failed`), **24.8-l** (chargebacks) | ⁇ watch-only | Narrowed: shipped read-side already handles canceled/refunded correctly. Only exposure = extend exhibitor `SETTLED`/`NON_PAYABLE` sets (`orders.helpers.ts:31,34`) one line each when the new statuses ship. |
 
 ### External-epic blockers gating Order History (all re-verified open)
